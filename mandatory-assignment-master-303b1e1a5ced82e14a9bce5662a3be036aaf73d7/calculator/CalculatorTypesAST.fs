@@ -17,3 +17,12 @@ type expr =
   | OrExpr of (expr * expr)
   | AndExpr of (expr * expr)
   | EqualExpr of (expr * expr)
+  | NequalExpr of (expr * expr)
+  | NotExpr of (expr)
+  | GreaterEqualExpr of (expr * expr)
+  | SmallerEqualExpr of (expr * expr)
+  | GreaterExpr of (expr * expr)
+  | SmallerExpr of (expr * expr)
+  | AssignExpr of (expr * expr)
+  | Bool of String
+//  | Skip of (expr)
