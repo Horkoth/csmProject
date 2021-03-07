@@ -12,10 +12,12 @@ System.Globalization.CultureInfo.CurrentCulture <- new System.Globalization.Cult
 // We define macros for some regular expressions we will use later
 let digit       = ['0'-'9']
 let num         = digit+ ( '.' digit+)?  ('E' ('+'|'-')? digit+ )?
-let unum        = digit- ( '.' digit+)?
 let lc_char		= ['a'-'z']
 let uc_char 	= ['A'-'Z']
 let letter		= lc_char uc_char (lc_char digit)? (uc_char digit)?
+let truth		= "true"
+let falsehood 	= "false"
+let bool 		= truth falsehood
 //let and 		= "&&"
 //let or 			= "||"
 let whitespace  = ' ' | '\t' | "\n\r" | '\n' | '\r'
@@ -31,16 +33,15 @@ rule tokenize = parse
 //| newline       { lexbuf.EndPos <- lexbuf.EndPos.NextLine; tokenize lexbuf; }
 // deal with tokens that need to be built
 | num           { NUM(Double.Parse(LexBuffer<_>.LexemeString lexbuf)) }
-| "skip"        { SKIP }
-| "true"        { TRUE }
-| "false"       { FALSE }
+//| "skip"        { SKIP }
+| bool 			{ BOOL(LexBuffer<_>.LexemeString lexbuf) }
 | letter		{ LETTER(LexBuffer<_>.LexemeString lexbuf) }
 | "&&"			{ AND }
 | "||"			{ OR }
 | '&'			{ BAND }
 | '|'			{ BOR }
 | ":="          { ASSIGN }
-| "!= "         { NEQUAL }
+| "!="          { NEQUAL }
 | "!"           { NOT }
 | ">="          { GREATEREQUAL }
 | "<="          { SMALLEREQUAL }
