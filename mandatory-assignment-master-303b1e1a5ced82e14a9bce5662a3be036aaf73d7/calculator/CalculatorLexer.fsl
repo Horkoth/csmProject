@@ -36,11 +36,11 @@ rule tokenize = parse
 | whitespace    { tokenize lexbuf }
 //| newline       { lexbuf.EndPos <- lexbuf.EndPos.NextLine; tokenize lexbuf; }
 // deal with tokens that need to be built
+| "skip"        { SKIP(LexBuffer<_>.LexemeString lexbuf) }
+| "true" 		{ TRUE(LexBuffer<_>.LexemeString lexbuf) }
+| "false"		{ FALSE(LexBuffer<_>.LexemeString lexbuf) }
 | unum          { UNUM(Double.Parse(LexBuffer<_>.LexemeString lexbuf)) }
 | num           { NUM(Double.Parse(LexBuffer<_>.LexemeString lexbuf)) }
-| "skip"        { SKIP }
-| "true" 		{ TRUE }
-| "false"		{ FALSE }
 | var			{ VAR(LexBuffer<_>.LexemeString lexbuf) }
 | "&&"			{ AND }
 | "||"			{ OR }
