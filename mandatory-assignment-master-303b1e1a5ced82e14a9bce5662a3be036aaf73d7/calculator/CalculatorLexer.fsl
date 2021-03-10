@@ -12,16 +12,16 @@ System.Globalization.CultureInfo.CurrentCulture <- new System.Globalization.Cult
 // We define macros for some regular expressions we will use later
 let digit       = ['0'-'9']
 let num         = digit+ ( '.' digit+)?  ('E' ('+'|'-')? digit+ )?
+let unum 		= '-' num
 let lc_char		= ['a'-'z']
 let uc_char 	= ['A'-'Z']
-let letter		= lc_char uc_char (lc_char digit)? (uc_char digit)?
-let truth		= "true"
-let falsehood 	= "false"
-let bool 		= truth falsehood
+let letter		= lc_char | uc_char
+let var  		= letter (letter | digit)*
+//let arr 		= var '[' num ']'
+//let bool 		= truth | falsehood
 //let and 		= "&&"
 //let or 			= "||"
-let whitespace  = ' ' | '\t' | "\n\r" | '\n' | '\r'
-//let newline     = "\n\r" | '\n' | '\r'
+let whitespace  = ' ' | '\t' | '\n' | '\r'
 
 // We define now the rules for recognising and building tokens
 // for each of the tokens of our language we need a rule
@@ -29,15 +29,22 @@ let whitespace  = ' ' | '\t' | "\n\r" | '\n' | '\r'
 //       This is important when tokens overlap (not in this example)
 rule tokenize = parse
 // deal with tokens that need to be ignored (skip them)
+| "if "			{ IF }
+| " fi"			{ FI }
+| "do "			{ DO }
+| " od"			{ OD }
 | whitespace    { tokenize lexbuf }
 //| newline       { lexbuf.EndPos <- lexbuf.EndPos.NextLine; tokenize lexbuf; }
 // deal with tokens that need to be built
+| unum          { UNUM(Double.Parse(LexBuffer<_>.LexemeString lexbuf)) }
 | num           { NUM(Double.Parse(LexBuffer<_>.LexemeString lexbuf)) }
-//| "skip"        { SKIP }
-| bool 			{ BOOL(LexBuffer<_>.LexemeString lexbuf) }
-| letter		{ LETTER(LexBuffer<_>.LexemeString lexbuf) }
+| "skip"        { SKIP }
+| "true" 		{ TRUE }
+| "false"		{ FALSE }
+| var			{ VAR(LexBuffer<_>.LexemeString lexbuf) }
 | "&&"			{ AND }
 | "||"			{ OR }
+| "->"			{ ARROW }
 | '&'			{ BAND }
 | '|'			{ BOR }
 | ":="          { ASSIGN }
@@ -57,4 +64,5 @@ rule tokenize = parse
 | ')'           { RPAR }
 | '['			{ LBRACK }
 | ']'			{ RBRACK }
+| ';'			{ SCOLON }
 | eof           { EOF }
