@@ -3,19 +3,19 @@
 module CalculatorTypesAST
 
 type cmd =
-  | VarAssignCmd of (Var * expr)
-  | ArrAssignCmd of (Var * expr * expr)
+  | VarAssignCmd of (string * expr)
+  | ArrAssignCmd of (string * expr * expr)
   | IfCmd of (gcmd)
   | DoCmd of (gcmd)
-
-type gcmd =
+  | Skip of string 
+  | Scolon of (cmd * cmd)
+and gcmd =
   | ConditionCmd of (bool * cmd)
-
-
-type expr =
+  | Brack of (gcmd * gcmd)
+and expr =
   | Num of float
   | Unum of (expr)
-  | Var of String
+  | Var of string
   | Times of (expr * expr)
   | Div of (expr * expr)
   | Plus of (expr * expr)
@@ -23,12 +23,10 @@ type expr =
   | Pow of (expr * expr)
   | UPlus of (expr)
   | UMinus of (expr)
-  | Assign of (expr * expr)
-  | ArrIndex of (Var * expr)
-
-type bool =
-  | True of String
-  | False of String
+  | ArrIndex of (string * expr)
+and bool =
+  | True of string
+  | False of string
   | Band of (bool * bool)
   | Bor of (bool * bool)
   | And of (bool * bool)
