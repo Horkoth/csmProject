@@ -1,0 +1,60 @@
+// The generated lexer module will start with this code
+{
+module Lexer
+open FSharp.Text.Lexing
+open System
+// open the module that defines the tokens
+open Parser
+// Set the language to English such that 4.0 is parsed as 4 and not 40.
+System.Globalization.CultureInfo.CurrentCulture <- new System.Globalization.CultureInfo("en-US")
+}
+
+// We define macros for some regular expressions we will use later
+let digit       = ['0'-'9']
+let num         = digit+ ( '.' digit+)?  ('E' ('+'|'-')? digit+ )?
+let lc_char		= ['a'-'z']
+let uc_char 	= ['A'-'Z']
+let letter		= lc_char | uc_char
+let var  		= letter (letter | digit)*
+let whitespace  = ' ' | '\t' | '\n' | '\r'
+
+// We define now the rules for recognising and building tokens
+// for each of the tokens of our language we need a rule
+// NOTE: rules are applied in order top-down.
+//       This is important when tokens overlap (not in this example)
+rule tokenize = parse
+// deal with tokens that need to be ignored (skip them)
+| "if "			{ IF }
+| " fi"			{ FI }
+| "do "			{ DO }
+| " od"			{ OD }
+| whitespace    { tokenize lexbuf }
+| "skip"        { SKIP(LexBuffer<_>.LexemeString lexbuf) }
+| "true" 		{ TRUE(LexBuffer<_>.LexemeString lexbuf) }
+| "false"		{ FALSE(LexBuffer<_>.LexemeString lexbuf) }
+| num           { NUM(Double.Parse(LexBuffer<_>.LexemeString lexbuf)) }
+| var			{ VAR(LexBuffer<_>.LexemeString lexbuf) }
+| "&&"			{ AND }
+| "||"			{ OR }
+| "->"			{ ARROW }
+| '&'			{ BAND }
+| '|'			{ BOR }
+| ":="          { ASSIGN }
+| "!="          { NEQUAL }
+| "!"           { NOT }
+| ">="          { GREATEREQUAL }
+| "<="          { SMALLEREQUAL }
+| '<'           { SMALLER }
+| '>'           { GREATER }
+| '='			{ EQUAL }
+| '*'           { TIMES }
+| '/'           { DIV }
+| '+'           { PLUS }
+| '-'           { MINUS }
+| '^'           { POW }
+| '('           { LPAR }
+| ')'           { RPAR }
+| '['			{ LBRACK }
+| ']'			{ RBRACK }
+| ';'			{ SCOLON }
+| eof           { EOF }
