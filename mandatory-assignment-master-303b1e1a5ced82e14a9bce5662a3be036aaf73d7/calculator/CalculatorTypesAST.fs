@@ -2,27 +2,41 @@
 // to store represent arithmetic expressions
 module CalculatorTypesAST
 
+type cmd =
+  | VarAssignCmd of (Var * expr)
+  | ArrAssignCmd of (Var * expr * expr)
+  | IfCmd of (gcmd)
+  | DoCmd of (gcmd)
+
+type gcmd =
+  | ConditionCmd of (bool * cmd)
+
+
 type expr =
   | Num of float
-  | Letter of String
-  | TimesExpr of (expr * expr)
-  | DivExpr of (expr * expr)
-  | PlusExpr of (expr * expr)
-  | MinusExpr of (expr * expr)
-  | PowExpr of (expr * expr)
-  | UPlusExpr of (expr)
-  | UMinusExpr of (expr)
-  | BorExpr of (expr * expr)
-  | BandExpr of (expr * expr)
-  | OrExpr of (expr * expr)
-  | AndExpr of (expr * expr)
-  | EqualExpr of (expr * expr)
-  | NequalExpr of (expr * expr)
-  | NotExpr of (expr)
-  | GreaterEqualExpr of (expr * expr)
-  | SmallerEqualExpr of (expr * expr)
-  | GreaterExpr of (expr * expr)
-  | SmallerExpr of (expr * expr)
-  | AssignExpr of (expr * expr)
-  | Bool of String
-//  | Skip of (expr)
+  | Unum of (expr)
+  | Var of String
+  | Times of (expr * expr)
+  | Div of (expr * expr)
+  | Plus of (expr * expr)
+  | Minus of (expr * expr)
+  | Pow of (expr * expr)
+  | UPlus of (expr)
+  | UMinus of (expr)
+  | Assign of (expr * expr)
+  | ArrIndex of (Var * expr)
+
+type bool =
+  | True of String
+  | False of String
+  | Band of (bool * bool)
+  | Bor of (bool * bool)
+  | And of (bool * bool)
+  | Or of (bool * bool)
+  | Equal of (expr * expr)
+  | Nequal of (expr * expr)
+  | Not of (bool)
+  | GreaterEqual of (expr * expr)
+  | SmallerEqual of (expr * expr)
+  | Greater of (expr * expr)
+  | Smaller of (expr * expr)
