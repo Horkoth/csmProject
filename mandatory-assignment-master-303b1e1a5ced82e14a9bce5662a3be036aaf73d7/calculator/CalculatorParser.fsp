@@ -5,8 +5,8 @@ open CalculatorTypesAST
 
 // Declare the tokens (terminal symbols)
 %token <float> NUM UNUM
-%token ASSIGN SKIP TIMES DIV PLUS MINUS POW LPAR RPAR LBRACK RBRACK OR AND BOR BAND NEQUAL NOT GREATEREQUAL SMALLEREQUAL GREATER SMALLER EQUAL ARROW IF FI DO OD SCOLON EOF
-%token <String> TRUE FALSE VAR
+%token ASSIGN TIMES DIV PLUS MINUS POW LPAR RPAR LBRACK RBRACK OR AND BOR BAND NEQUAL NOT GREATEREQUAL SMALLEREQUAL GREATER SMALLER EQUAL ARROW IF FI DO OD SCOLON EOF
+%token <string> TRUE FALSE VAR SKIP
 // NOTE: the actual formats of these tokens are defined in the lexer file
 //       as regular expressions
 
@@ -29,8 +29,11 @@ open CalculatorTypesAST
 %start start
 
 // We specify the return type of each of then non-terminal symbols
-%type <expr> start
+%type <cmd> start
 %type <expr> expression
+%type <cmd> command
+%type <gcmd> guarded_command
+%type <bool> boolean
 
 // Grammar productions
 %%
@@ -38,7 +41,7 @@ open CalculatorTypesAST
 // The first production in "formal" notation is
 // start -> expression
 // here written:
-start: command EOF             { $1 }
+start: command EOF            { $1 }
 
 // Note that we need to insert an End-Of-File (EOF)
 // The code annotation { $1 } specifies that parsing with this production
@@ -55,22 +58,21 @@ expression:
   | expression POW expression				{ Pow($1,$3) }
   | UNUM									{ Num($1) }
   | NUM										{ Num($1) }
-  | LPAR expression RPAR					{ $2 }
-  | expression ASSIGN expression            { Assign($1,$3)}
-  | VAR LBRACK expression RBRACK			{ ArrIndex($1,$3) }
   | VAR										{ Var($1) }
+  | LPAR expression RPAR					{ $2 }
+  | VAR LBRACK expression RBRACK			{ ArrIndex($1,$3) }
 
 command:
   | VAR ASSIGN expression 							{ VarAssignCmd($1,$3) }
   | VAR LBRACK expression RBRACK ASSIGN expression  { ArrAssignCmd($1,$3,$6) }
-  | SKIP 											{ $1 }
-  | command SCOLON command 							{ ($1,$3) }
+  | SKIP 											{ Skip($1) }
+  | command SCOLON command 							{ Scolon($1,$3) }
   | IF guarded_command FI 							{ IfCmd($2) }
   | DO guarded_command OD 							{ DoCmd($2) }
 
 guarded_command:
   | boolean ARROW command 						  { ConditionCmd($1,$3) }
-  | guarded_command LBRACK RBRACK guarded_command { ($1,$4) }
+  | guarded_command LBRACK RBRACK guarded_command { Brack($1,$4) }
 
 boolean:
   | TRUE									{ True($1) }
@@ -79,13 +81,13 @@ boolean:
   | boolean BOR boolean 					{ Bor($1,$3) }
   | boolean AND boolean 					{ And($1,$3) }
   | boolean OR boolean 			 		 	{ Or($1,$3) }
-  | boolean EQUAL boolean					{ Equal($1,$3) }
-  | boolean NEQUAL boolean					{ Nequal($1,$3) }
+  | expression EQUAL expression				{ Equal($1,$3) }
+  | expression NEQUAL expression			{ Nequal($1,$3) }
   | NOT boolean							    { Not($2) }
-  | boolean GREATEREQUAL boolean			{ GreaterEqual($1,$3) }
-  | boolean SMALLEREQUAL boolean			{ SmallerEqual($1,$3) }
-  | boolean GREATER boolean					{ Greater($1,$3) }
-  | boolean SMALLER boolean					{ Smaller($1,$3) }
+  | expression GREATEREQUAL expression		{ GreaterEqual($1,$3) }
+  | expression SMALLEREQUAL expression		{ SmallerEqual($1,$3) }
+  | expression GREATER expression			{ Greater($1,$3) }
+  | expression SMALLER expression			{ Smaller($1,$3) }
   | LPAR boolean RPAR						{ $2 }
 
 
