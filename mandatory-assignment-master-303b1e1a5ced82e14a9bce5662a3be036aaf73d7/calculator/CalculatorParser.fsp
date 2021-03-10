@@ -4,20 +4,26 @@ open CalculatorTypesAST
 %}
 
 // Declare the tokens (terminal symbols)
-%token <float> NUM
-%token ASSIGN SKIP TIMES DIV PLUS MINUS POW LPAR RPAR LBRACK RBRACK OR AND BOR BAND NEQUAL NOT GREATEREQUAL SMALLEREQUAL GREATER SMALLER EQUAL EOF
-%token <String> LETTER BOOL
+%token <float> NUM UNUM
+%token ASSIGN SKIP TIMES DIV PLUS MINUS POW LPAR RPAR LBRACK RBRACK OR AND BOR BAND NEQUAL NOT GREATEREQUAL SMALLEREQUAL GREATER SMALLER EQUAL ARROW IF FI DO OD SCOLON EOF
+%token <String> TRUE FALSE VAR
 // NOTE: the actual formats of these tokens are defined in the lexer file
 //       as regular expressions
 
 // Specify precedence and associativity of operators
 // Precedence is given by the order (from low to high)
 
+%right SCOLON
+%right LBRACK RBRACK
 
 %left PLUS MINUS
 %left TIMES DIV
 %right POW
+//%left UMINUS
 
+%left OR BOR
+%left AND BAND
+%left NOT
 
 // We declare the initial non-terminal symbol
 %start start
@@ -32,7 +38,7 @@ open CalculatorTypesAST
 // The first production in "formal" notation is
 // start -> expression
 // here written:
-start: expression EOF             { $1 }
+start: command EOF             { $1 }
 
 // Note that we need to insert an End-Of-File (EOF)
 // The code annotation { $1 } specifies that parsing with this production
@@ -42,39 +48,51 @@ start: expression EOF             { $1 }
 // The productions for expressions are like in the grammar we saw in class
 // written in the yacc format:
 expression:
-  | expression TIMES expression				{ TimesExpr($1,$3) }
-  | expression DIV expression				{ DivExpr($1,$3) }
-  | expression PLUS expression				{ PlusExpr($1,$3) }
-  | expression MINUS expression				{ MinusExpr($1,$3) }
-  | expression POW expression				{ PowExpr($1,$3) }
-  | PLUS expression							{ UPlusExpr($2) }
-  | MINUS expression						{ UMinusExpr($2) }
+  | expression TIMES expression				{ Times($1,$3) }
+  | expression DIV expression				{ Div($1,$3) }
+  | expression PLUS expression				{ Plus($1,$3) }
+  | expression MINUS expression				{ Minus($1,$3) }
+  | expression POW expression				{ Pow($1,$3) }
+  | UNUM									{ Num($1) }
   | NUM										{ Num($1) }
-  | LETTER 									{ Letter($1) }
   | LPAR expression RPAR					{ $2 }
-  | LBRACK expression RBRACK				{ $2 }
-  | expression BOR expression 				{ BorExpr($1,$3) }
-  | expression BAND expression 				{ BandExpr($1,$3) }
-  | expression OR expression 				{ OrExpr($1,$3) }
-  | expression AND expression 				{ AndExpr($1,$3) }
-  | expression EQUAL expression				{ EqualExpr($1,$3) }
-  | expression NEQUAL expression			{ NequalExpr($1,$3) }
-  | NOT expression							{ NotExpr($2) }
-  | expression GREATEREQUAL expression		{ GreaterEqualExpr($1,$3) }
-  | expression SMALLEREQUAL expression		{ SmallerEqualExpr($1,$3) }
-  | expression GREATER expression			{ GreaterExpr($1,$3) }
-  | expression SMALLER expression			{ SmallerExpr($1,$3) }
-  | expression ASSIGN expression            { AssignExpr($1,$3)}
-//  | SKIP									{ Skip($1) }
-  | BOOL									{ Bool($1) }
+  | expression ASSIGN expression            { Assign($1,$3)}
+  | VAR LBRACK expression RBRACK			{ ArrIndex($1,$3) }
+  | VAR										{ Var($1) }
 
+command:
+  | VAR ASSIGN expression 							{ VarAssignCmd($1,$3) }
+  | VAR LBRACK expression RBRACK ASSIGN expression  { ArrAssignCmd($1,$3,$6) }
+  | SKIP 											{ $1 }
+  | command SCOLON command 							{ ($1,$3) }
+  | IF guarded_command FI 							{ IfCmd($2) }
+  | DO guarded_command OD 							{ DoCmd($2) }
 
+guarded_command:
+  | boolean ARROW command 						  { ConditionCmd($1,$3) }
+  | guarded_command LBRACK RBRACK guarded_command { ($1,$4) }
+
+boolean:
+  | TRUE									{ True($1) }
+  | FALSE									{ False($1) }
+  | boolean BAND boolean 					{ Band($1,$3) }
+  | boolean BOR boolean 					{ Bor($1,$3) }
+  | boolean AND boolean 					{ And($1,$3) }
+  | boolean OR boolean 			 		 	{ Or($1,$3) }
+  | boolean EQUAL boolean					{ Equal($1,$3) }
+  | boolean NEQUAL boolean					{ Nequal($1,$3) }
+  | NOT boolean							    { Not($2) }
+  | boolean GREATEREQUAL boolean			{ GreaterEqual($1,$3) }
+  | boolean SMALLEREQUAL boolean			{ SmallerEqual($1,$3) }
+  | boolean GREATER boolean					{ Greater($1,$3) }
+  | boolean SMALLER boolean					{ Smaller($1,$3) }
+  | LPAR boolean RPAR						{ $2 }
 
 
 
 // Again, the code annotation specifies the result of parsing
-// For example { TimesExpr($1,$3) } specifies that parsing with the production
-// returns the value TimesExpr($1,$3), where $i is the result of parsing
+// For example { Times($1,$3) } specifies that parsing with the production
+// returns the value Times($1,$3), where $i is the result of parsing
 // component i in the production (in this case the lhs and rhs operands)
 
 %%
