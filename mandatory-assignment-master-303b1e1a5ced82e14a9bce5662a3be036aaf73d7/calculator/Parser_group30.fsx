@@ -17,24 +17,29 @@ let pg input node0 node1 =
     match input with
       | ConditionCmd(x,y) -> Not(x)
       | Brack(x,y) -> And((finished x),(finished y))
-  let rec edges input node0 node1 =
+  let rec helper input node0 node1 =
+    //guarded commands
     match input with
-      //commands
-      | VarAssignCmd(x,y)   -> //"q%A -> q%A [label = \"%A\"];" node0 node1 input
-                               "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (string input) + "\"];"
-      | ArrAssignCmd(x,y,z) -> "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (string input) + "\"];"
-      | IfCmd(x)            -> edges x node0 node1
-      | DoCmd(x)            -> //("q%A -> q%A [label = \"%A\"];" node0 node1 (finished x)) + (edges node0 node0 x)
-                               "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (string (finished x)) + "\"];" + (edges node0 node0 x)
-      | Skip(x)             -> "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (string input) + "\"];"
-      | Scolon(x,y)         -> counter = counter + 1
-                               (edges node0 counter x) + (edges counter node1 y)
-      //guarded commands
-      | ConditionCmd(x,y)   -> counter = counter + 1
+      | ConditionCmd(x,y)   -> counter <- counter + 1
                                //("q%A -> q%A [label = \"%A\"];" node0 counter x) + (edges counter node1 y)
-                               "q" + (string node0) + " -> q" + (string counter) + " [label = \"" + (string x) + "\"];" + (edges counter node1 y)
-      | Brack(x,y)          -> (edges node0 node1 x) + (edges node0 node1 y)
-      //expressions
+                               "q" + (string node0) + " -> q" + (string counter) + " [label = \"" + (string x) + "\"];\n" + (edges y counter node1)
+      | Brack(x,y)          -> (helper x node0 node1) + (helper y node0 node1)
+  and edges input node0 node1 =
+    //commands
+    match input with
+      | VarAssignCmd(x,y)   -> //"q%A -> q%A [label = \"%A\"];" node0 node1 input
+                               "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (string input) + "\"];\n"
+      | ArrAssignCmd(x,y,z) -> "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (string input) + "\"];\n"
+      | IfCmd(x)            -> helper x node0 node1
+      | DoCmd(x)            -> //("q%A -> q%A [label = \"%A\"];" node0 node1 (finished x)) + (edges node0 node0 x)
+                               "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (string (finished x)) + "\"];\n" + (helper x node0 node0)
+      | Skip(x)             -> "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (string input) + "\"];\n"
+      | Scolon(x,y)         -> counter <- counter + 1
+                               (edges x node0 counter) + (edges y counter node1)
+  (*
+  and helper2 input node0 node1
+    //expressions
+    match input with
       | Num(x)              -> (string input)
       | Var(x)              -> (string input)
       | Times(x,y)          -> (string input)
@@ -44,7 +49,10 @@ let pg input node0 node1 =
       | Pow(x,y)            -> (string input)
       | Uminus(x)           -> (string input)
       | ArrIndex(x,y)       -> (string input)
-      //booleans
+
+  and help3r input node0 node1
+    //booleans
+    match input with
       | True(x)             -> (string input)
       | False(x)            -> (string input)
       | Band(x,y)           -> (string input)
@@ -58,7 +66,8 @@ let pg input node0 node1 =
       | SmallerEqual(x,y)   -> (string input)
       | Greater(x,y)        -> (string input)
       | Smaller(x,y)        -> (string input)
-  "digraph program_graph {rankdir=LR;node [shape = circle]; q▷;node [shape = doublecircle]; q◀;node [shape = circle]" + (edges input node0 node1) + "}"
+  *)
+  "digraph program_graph {rankdir=LR;\nnode [shape = circle]; q0;\nnode [shape = doublecircle]; q99;\nnode [shape = circle]\n" + (edges input node0 node1) + "}"
 
 //q▷ -> q◀
 
@@ -75,7 +84,7 @@ let parse input =
 let rec compute =
   printf "Enter a command: "
   let e = parse (Console.ReadLine())
-  printfn "%s" (pg e "▷" "◀")
+  printfn "%A" e//(pg e 0 99)
 
 // Start interacting with the user
 compute
