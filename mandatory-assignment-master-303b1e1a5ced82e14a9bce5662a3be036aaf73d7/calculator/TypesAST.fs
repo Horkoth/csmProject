@@ -3,7 +3,7 @@
 module TypesAST
 
 type cmd =
-  | VarAssignCmd of (string * expr)
+  | VarAssignCmd of (expr * expr)
   | ArrAssignCmd of (string * expr * expr)
   | IfCmd of (gcmd)
   | DoCmd of (gcmd)
