@@ -11,44 +11,38 @@ open Parser
 #load "Lexer.fs"
 open Lexer
 
-let exprToString input = 
-  match input with
-  | Var x -> "Var " + "\\\"" + (string x) + "\\\""
-  | x -> (string x)
-
-let rec cmdToString input =
-  match input with 
-  | VarAssignCmd(x,y) -> "VarAssignCmd" + "(" + (exprToString x) + "," + (exprToString y) + ")"
-  | x -> (string x)
-
 let pg input node0 node1 =
   let mutable counter = 0
   let rec finished input =
     match input with
       | ConditionCmd(x,y) -> Not(x)
       | Brack(x,y) -> And((finished x),(finished y))
+  let rec cleanString input =
+    match input with 
+      | x::xs when x = '"' -> '\\'::'"'::(cleanString xs)
+      | x::xs -> x::(cleanString xs)
+      | x::[] when x = '"' -> '\\'::'"'::[]
+      | x::[] -> x::[]
+      | _ -> []
+  let transform input =
+    (String.Concat(Array.ofList((cleanString (Seq.toList input)))))
   let rec helper input node0 node1 =
     //guarded commands
     match input with
       | ConditionCmd(x,y)   -> counter <- counter + 1
-                               //("q%A -> q%A [label = \"%A\"];" node0 counter x) + (edges counter node1 y)
-                               "q" + (string node0) + " -> q" + (string counter) + " [label = \"" + (string x) + "\"];\n" + (edges y counter node1)
+                               "q" + (string node0) + " -> q" + (string counter) + " [label = \"" + (transform (string x)) + "\"];\n" + (edges y (string counter) node1)
       | Brack(x,y)          -> (helper x node0 node1) + (helper y node0 node1)
   and edges input node0 node1 =
     //commands
     match input with
-      | VarAssignCmd(x,y)   -> //"q%A -> q%A [label = \"%A\"];" node0 node1 input
-                               "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (cmdToString input) + "\"];\n"
-      | ArrAssignCmd(x,y,z) -> "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (string input) + "\"];\n"
+      | VarAssignCmd(x,y)   -> "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (transform (string input)) + "\"];\n"
+      | ArrAssignCmd(x,y,z) -> "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (transform (string input)) + "\"];\n"
       | IfCmd(x)            -> helper x node0 node1
-      | DoCmd(x)            -> //("q%A -> q%A [label = \"%A\"];" node0 node1 (finished x)) + (edges node0 node0 x)
-                               "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (string (finished x)) + "\"];\n" + (helper x node0 node0)
-      | Skip(x)             -> "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (string input) + "\"];\n"
+      | DoCmd(x)            -> "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (string (finished x)) + "\"];\n" + (helper x node0 node0)
+      | Skip(x)             -> "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (transform (string input)) + "\"];\n"
       | Scolon(x,y)         -> counter <- counter + 1
-                               (edges x node0 counter) + (edges y counter node1)
-  "digraph program_graph {rankdir=LR;\nnode [shape = circle]; q0;\nnode [shape = doublecircle]; q99;\nnode [shape = circle]\n" + (edges input node0 node1) + "}"
-
-//q▷ -> q◀
+                               (edges x node0 (string counter)) + (edges y (string counter) node1)
+  "digraph program_graph {rankdir=LR;\nnode [shape = circle]; q▷;\nnode [shape = doublecircle]; q◀;\nnode [shape = circle]\n" + (edges input node0 node1) + "}"
 
 // We
 let parse input =
@@ -65,8 +59,8 @@ let rec compute =
   
   let e = parse (Console.ReadLine())
 
-  printfn "%s" (pg e 0 99)
-  printfn "\n%A" e
+  printfn "\n%s" (pg e "▷" "◀")
+  printfn "\n%A\n" e
 
 // Start interacting with the user
 compute
