@@ -11,6 +11,15 @@ open Parser
 #load "Lexer.fs"
 open Lexer
 
+let rec cmdToString input =
+  match input with 
+  | VarAssignCmd(x,y) -> "VarAssignCmd" + "(" + (exprToString x) + "," + (exprToString y) + ")"
+  | x -> (string x)
+and exprToString input = 
+  match input with
+  | Var x -> "Var " + "\\\"" + (string x) + "\\\""
+  | x -> (string x)
+
 let pg input node0 node1 =
   let mutable counter = 0
   let rec finished input =
@@ -28,7 +37,7 @@ let pg input node0 node1 =
     //commands
     match input with
       | VarAssignCmd(x,y)   -> //"q%A -> q%A [label = \"%A\"];" node0 node1 input
-                               "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (string input) + "\"];\n"
+                               "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (cmdToString input) + "\"];\n"
       | ArrAssignCmd(x,y,z) -> "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (string input) + "\"];\n"
       | IfCmd(x)            -> helper x node0 node1
       | DoCmd(x)            -> //("q%A -> q%A [label = \"%A\"];" node0 node1 (finished x)) + (edges node0 node0 x)
@@ -83,8 +92,11 @@ let parse input =
 // We implement here the function that interacts with the user
 let rec compute =
   printf "Enter a command: "
+  
   let e = parse (Console.ReadLine())
-  printfn "%A" e//(pg e 0 99)
+
+  printfn "%A" (pg e 0 99)//(pg e 0 99)
+  printfn "\n%A" e
 
 // Start interacting with the user
 compute
