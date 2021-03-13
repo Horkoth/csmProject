@@ -60,7 +60,7 @@ expression:
   | VAR LBRACK expression RBRACK			{ ArrIndex($1,$3) }
 
 command:
-  | VAR ASSIGN expression 							{ VarAssignCmd($1,$3) }
+  | expression ASSIGN expression 							{ VarAssignCmd($1,$3) }
   | VAR LBRACK expression RBRACK ASSIGN expression  { ArrAssignCmd($1,$3,$6) }
   | SKIP 											{ Skip($1) }
   | command SCOLON command 							{ Scolon($1,$3) }
