@@ -11,13 +11,14 @@ open Parser
 #load "Lexer.fs"
 open Lexer
 
+let exprToString input = 
+  match input with
+  | Var x -> "Var " + "\\\"" + (string x) + "\\\""
+  | x -> (string x)
+
 let rec cmdToString input =
   match input with 
   | VarAssignCmd(x,y) -> "VarAssignCmd" + "(" + (exprToString x) + "," + (exprToString y) + ")"
-  | x -> (string x)
-and exprToString input = 
-  match input with
-  | Var x -> "Var " + "\\\"" + (string x) + "\\\""
   | x -> (string x)
 
 let pg input node0 node1 =
@@ -45,37 +46,6 @@ let pg input node0 node1 =
       | Skip(x)             -> "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (string input) + "\"];\n"
       | Scolon(x,y)         -> counter <- counter + 1
                                (edges x node0 counter) + (edges y counter node1)
-  (*
-  and helper2 input node0 node1
-    //expressions
-    match input with
-      | Num(x)              -> (string input)
-      | Var(x)              -> (string input)
-      | Times(x,y)          -> (string input)
-      | Div(x,y)            -> (string input)
-      | Plus(x,y)           -> (string input)
-      | Minus(x,y)          -> (string input)
-      | Pow(x,y)            -> (string input)
-      | Uminus(x)           -> (string input)
-      | ArrIndex(x,y)       -> (string input)
-
-  and help3r input node0 node1
-    //booleans
-    match input with
-      | True(x)             -> (string input)
-      | False(x)            -> (string input)
-      | Band(x,y)           -> (string input)
-      | Bor(x,y)            -> (string input)
-      | And(x,y)            -> (string input)
-      | Or(x,y)             -> (string input)
-      | Equal(x,y)          -> (string input)
-      | Nequal(x,y)         -> (string input)
-      | Not(x)              -> (string input)
-      | GreaterEqual(x,y)   -> (string input)
-      | SmallerEqual(x,y)   -> (string input)
-      | Greater(x,y)        -> (string input)
-      | Smaller(x,y)        -> (string input)
-  *)
   "digraph program_graph {rankdir=LR;\nnode [shape = circle]; q0;\nnode [shape = doublecircle]; q99;\nnode [shape = circle]\n" + (edges input node0 node1) + "}"
 
 //q▷ -> q◀
@@ -95,7 +65,7 @@ let rec compute =
   
   let e = parse (Console.ReadLine())
 
-  printfn "%A" (pg e 0 99)//(pg e 0 99)
+  printfn "%s" (pg e 0 99)
   printfn "\n%A" e
 
 // Start interacting with the user
