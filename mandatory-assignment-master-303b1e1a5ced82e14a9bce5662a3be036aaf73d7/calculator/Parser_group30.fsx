@@ -11,21 +11,22 @@ open Parser
 #load "Lexer.fs"
 open Lexer
 
+let rec cleanString input =
+  match input with 
+    | x::xs when x = '"' -> '\\'::'"'::(cleanString xs)
+    | x::xs -> x::(cleanString xs)
+    | x::[] when x = '"' -> '\\'::'"'::[]
+    | x::[] -> x::[]
+    | _ -> []
+let transform input =
+  (String.Concat(Array.ofList((cleanString (Seq.toList input)))))
+  
 let pg input node0 node1 =
   let mutable counter = 0
   let rec finished input =
     match input with
       | ConditionCmd(x,y) -> Not(x)
       | Brack(x,y) -> And((finished x),(finished y))
-  let rec cleanString input =
-    match input with 
-      | x::xs when x = '"' -> '\\'::'"'::(cleanString xs)
-      | x::xs -> x::(cleanString xs)
-      | x::[] when x = '"' -> '\\'::'"'::[]
-      | x::[] -> x::[]
-      | _ -> []
-  let transform input =
-    (String.Concat(Array.ofList((cleanString (Seq.toList input)))))
   let rec helper input node0 node1 =
     //guarded commands
     match input with
