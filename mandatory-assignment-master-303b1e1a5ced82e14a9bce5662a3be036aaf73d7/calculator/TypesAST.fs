@@ -3,11 +3,11 @@
 module TypesAST
 
 type cmd =
-  | VarAssignCmd of (expr * expr)
+  | VarAssignCmd of (string * expr)
   | ArrAssignCmd of (string * expr * expr)
   | IfCmd of (gcmd)
   | DoCmd of (gcmd)
-  | Skip of string 
+  | Skip of string
   | Scolon of (cmd * cmd)
 and gcmd =
   | ConditionCmd of (bool * cmd)
@@ -23,8 +23,8 @@ and expr =
   | Uminus of (expr)
   | ArrIndex of (string * expr)
 and bool =
-  | True of string
-  | False of string
+  | True
+  | False
   | Band of (bool * bool)
   | Bor of (bool * bool)
   | And of (bool * bool)
@@ -36,3 +36,9 @@ and bool =
   | SmallerEqual of (expr * expr)
   | Greater of (expr * expr)
   | Smaller of (expr * expr)
+
+type edge_action =
+  | VarAssign of (string * expr)
+  | ArrAssign of (string * expr * expr)
+//  | Skip
+  | Test of bool
