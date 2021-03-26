@@ -13,7 +13,9 @@ open Lexer
 #load "Interpreter.fs"
 open Interpreter
 
-let det = false
+let det = true
+let startNode = 0
+let endNode = -1
 let mutable counter = 0
 
 //let converter
@@ -98,11 +100,23 @@ let rec compute =
   
   let e = parse (Console.ReadLine())
 
+  (*
+
+  printf "Enter variables (e.g. [(x,10);(y,5)]: "
+  
+  let vars = parse (Console.ReadLine())
+
+  printf "Enter arrays (e.g. [(A,[1;2]);(B,[3;4;5])]: "
+  
+  let arrs = parse (Console.ReadLine())
+
+  *)
+
   //printfn "\n%s" (pg e "▷" "◀" det)
     
   //printfn "\n%A\n" e
 
-  printfn "\n%A" (pg_structure e 0 -1 det)
+  printfn "\n%A" (runner (pg_structure e startNode endNode det) [(x,10);(y,5)] [(A,[1;2]);(B,[3;4;5])] startNode endNode)
 
 // Start interacting with the user
 compute
