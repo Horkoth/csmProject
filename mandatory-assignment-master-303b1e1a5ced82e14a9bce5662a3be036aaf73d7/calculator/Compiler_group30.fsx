@@ -10,10 +10,10 @@ open TypesAST
 open Parser
 #load "Lexer.fs"
 open Lexer
-//#load "Interpreter.fs"
-//open Interpreter
+#load "Interpreter.fs"
+open Interpreter
 
-let det = true
+let det = false
 let mutable counter = 0
 
 //let converter
@@ -60,7 +60,7 @@ let pg input node0 node1 det =
         | ArrAssignCmd(x,y,z) -> "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (transform (string input)) + "\"];\n"
         | IfCmd(x)            -> helper x node0 node1
         | DoCmd(x)            -> "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (string (finished x)) + "\"];\n" + (helper x node0 node0)
-        | Skip(x)             -> "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + (transform (string x)) + "\"];\n"
+        | SkipCmd             -> "q" + (string node0) + " -> q" + (string node1) + " [label = \"" + "skip" + "\"];\n"
         | Scolon(x,y)         -> counter <- counter + 1
                                  (edges x node0 (string counter)) + (edges y (string counter) node1) 
   let rec cmd input node0 node1 =
@@ -98,11 +98,11 @@ let rec compute =
   
   let e = parse (Console.ReadLine())
 
-  printfn "\n%s" (pg e "▷" "◀" det)
+  //printfn "\n%s" (pg e "▷" "◀" det)
     
   //printfn "\n%A\n" e
 
-  //printfn "\n%A" (structure e 0 -1 det)
+  printfn "\n%A" (pg_structure e 0 -1 det)
 
 // Start interacting with the user
 compute

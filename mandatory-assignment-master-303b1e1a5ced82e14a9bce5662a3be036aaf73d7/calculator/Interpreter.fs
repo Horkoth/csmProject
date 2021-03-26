@@ -3,7 +3,7 @@ open System
 
 //let mutable counter = 0
 
-let pg input node0 node1 det =
+let pg_structure input node0 node1 det =
   let mutable counter = 0
   let rec finished input =
     match input with
@@ -13,37 +13,48 @@ let pg input node0 node1 det =
       //guarded commands
       match input with
         | ConditionCmd(x,y)   -> counter <- counter + 1
-                                 (node0, counter, Test x)::(edges y counter node1)
+                                 (node0, counter, Test(x))::(edges y counter node1)
         | Brack(x,y)          -> (helper x node0 node1)@(helper y node0 node1)
   and edges input node0 node1 =
       //commands
       match input with
-        | VarAssignCmd(x,y)   -> (node0, node1, VarAssign (x, y))::[]
-        | ArrAssignCmd(x,y,z) -> (node0, node1, ArrAssign input)::[]
+        | VarAssignCmd(x,y)   -> (node0, node1, VarAssign(x,y))::[]
+        | ArrAssignCmd(x,y,z) -> (node0, node1, ArrAssign(x,y,z))::[]
         | IfCmd(x)            -> helper x node0 node1
-        | DoCmd(x)            -> (node0, node1, finished x)::[]
-        | Skip(x)             -> (node0, node1, input)::[]
+        | DoCmd(x)            -> [(node0, node1, Test(finished x))]@(helper x node0 node0)
+        | SkipCmd             -> (node0, node1, Skip)::[]
         | Scolon(x,y)         -> counter <- counter + 1
                                  (edges x node0 counter)@(edges y counter node1)
   let rec cmd input node0 node1 =
     match input with
-    | IfCmd(x) -> let (E,d) = gc x node0 node1 (string false)
+    | IfCmd(x) -> let E,d = gc x node0 node1 False
                   E
-    | DoCmd(x) -> let (E,d) = gc x node0 node0 (string false)
-                  E::(node0, node1, Not(d))
+    | DoCmd(x) -> let E,d = gc x node0 node0 False
+                  E@[(node0, node1, Test(Not(d)))]
     | x -> edges x node0 node1
   and gc input node0 node1 d =
     match input with
     | Brack(x,y) -> let (E1,d1) = gc x node0 node1 d
                     let (E2,d2) = gc y node0 node1 d1
-                    (E1::E2, d2)
+                    (E1@E2, d2)
     | ConditionCmd(b,C) -> counter <- counter + 1
-                           let E = edges C (string counter) node1
-                           ((node0, counter, And(b,Not(d)))::E, Or(b,d))
+                           let E = edges C counter node1
+                           ([(node0, counter, Test(And(b,Not(d))))]@E, Or(b,d))
   if det then
     (cmd input node0 node1)
   else
     (edges input node0 node1)
+
+(*
+let interpreter edgeAction {
+
+}
+
+let runner pg_structure vars arrs {
+    //vars = [("x",2);("y",5)]
+    //arrs = [("X",[2;3]]);("Y",[5])]
+}
+*)
 
   //[(q0,[(q1,expr),(q2,expr)]), (q1,[(q0,expr),(q2,expr)])]
 

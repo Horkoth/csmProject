@@ -5,8 +5,8 @@ open TypesAST
 
 // Declare the tokens (terminal symbols)
 %token <float> NUM //UNUM
-%token ASSIGN TIMES DIV PLUS MINUS POW LPAR RPAR LBRACK RBRACK OR AND BOR BAND NEQUAL NOT GREATEREQUAL SMALLEREQUAL GREATER SMALLER EQUAL ARROW IF FI DO OD SCOLON EOF
-%token <string> TRUE FALSE VAR SKIP
+%token ASSIGN TIMES DIV PLUS MINUS POW LPAR RPAR LBRACK RBRACK OR AND BOR BAND NEQUAL NOT GREATEREQUAL SMALLEREQUAL GREATER SMALLER EQUAL ARROW IF FI DO OD SCOLON EOF SKIP TRUE FALSE
+%token <string> VAR
 // NOTE: the actual formats of these tokens are defined in the lexer file
 //       as regular expressions
 
@@ -49,20 +49,20 @@ start: command EOF            { $1 }
 // written in the yacc format:
 expression:
   | expression TIMES expression				{ Times($1,$3) }
-  | expression DIV expression				{ Div($1,$3) }
+  | expression DIV expression				  { Div($1,$3) }
   | expression PLUS expression				{ Plus($1,$3) }
   | expression MINUS expression				{ Minus($1,$3) }
-  | expression POW expression				{ Pow($1,$3) }
-  | MINUS expression						{ Uminus($2) }
-  | NUM										{ Num($1) }
-  | VAR										{ Var($1) }
-  | LPAR expression RPAR					{ $2 }
+  | expression POW expression				  { Pow($1,$3) }
+  | MINUS expression						      { Uminus($2) }
+  | NUM										            { Num($1) }
+  | VAR										            { Var($1) }
+  | LPAR expression RPAR					    { $2 }
   | VAR LBRACK expression RBRACK			{ ArrIndex($1,$3) }
 
 command:
-  | expression ASSIGN expression 							{ VarAssignCmd($1,$3) }
+  | VAR ASSIGN expression 							{ VarAssignCmd($1,$3) }
   | VAR LBRACK expression RBRACK ASSIGN expression  { ArrAssignCmd($1,$3,$6) }
-  | SKIP 											{ Skip($1) }
+  | SKIP 											          { SkipCmd }
   | command SCOLON command 							{ Scolon($1,$3) }
   | IF guarded_command FI 							{ IfCmd($2) }
   | DO guarded_command OD 							{ DoCmd($2) }
@@ -72,8 +72,8 @@ guarded_command:
   | guarded_command LBRACK RBRACK guarded_command { Brack($1,$4) }
 
 boolean:
-  | TRUE									{ True($1) }
-  | FALSE									{ False($1) }
+  | TRUE									{ True }
+  | FALSE									{ False }
   | boolean BAND boolean 					{ Band($1,$3) }
   | boolean BOR boolean 					{ Bor($1,$3) }
   | boolean AND boolean 					{ And($1,$3) }

@@ -29,9 +29,9 @@ rule tokenize = parse
 | "do "			{ DO }
 | " od"			{ OD }
 | whitespace    { tokenize lexbuf }
-| "skip"        { SKIP(LexBuffer<_>.LexemeString lexbuf) }
-| "true" 		{ TRUE(LexBuffer<_>.LexemeString lexbuf) }
-| "false"		{ FALSE(LexBuffer<_>.LexemeString lexbuf) }
+| "skip"        { SKIP }
+| "true" 		{ TRUE }
+| "false"		{ FALSE }
 | num           { NUM(Double.Parse(LexBuffer<_>.LexemeString lexbuf)) }
 | var			{ VAR(LexBuffer<_>.LexemeString lexbuf) }
 | "&&"			{ AND }

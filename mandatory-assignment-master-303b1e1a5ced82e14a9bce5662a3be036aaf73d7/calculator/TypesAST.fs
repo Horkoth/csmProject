@@ -7,7 +7,7 @@ type cmd =
   | ArrAssignCmd of (string * expr * expr)
   | IfCmd of (gcmd)
   | DoCmd of (gcmd)
-  | Skip of string
+  | SkipCmd
   | Scolon of (cmd * cmd)
 and gcmd =
   | ConditionCmd of (bool * cmd)
@@ -40,5 +40,5 @@ and bool =
 type edge_action =
   | VarAssign of (string * expr)
   | ArrAssign of (string * expr * expr)
-//  | Skip
+  | Skip
   | Test of bool
