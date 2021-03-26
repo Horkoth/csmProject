@@ -116,7 +116,7 @@ let rec compute =
     
   //printfn "\n%A\n" e
 
-  printfn "\n%A" (runner (pg_structure e startNode endNode det) [(x,10);(y,5)] [(A,[1;2]);(B,[3;4;5])] startNode endNode)
+  printfn "\n%A" (runner (pg_structure e startNode endNode det) [("x",10.0);("y",5.0)] [("A",[1.0;2.0]);("B",[3.0;4.0;5.0])] startNode endNode)
 
 // Start interacting with the user
 compute
