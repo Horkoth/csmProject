@@ -49,19 +49,20 @@ let rec evaluate_var var var_list =
     match var_list with
     | (v,n)::vs when v = var  -> n
     | (v,n)::vs               -> evaluate_var var vs
-    | _                       -> failwith "Fejl 40"
+    | _                       -> failwith "Variable evaluation error"
 
-let rec extract_value x_list index =
-    match x_list with
+let rec extract_value value_list index =
+    match value_list with
     | x::xs when index = 0    -> x
+    | x::[] when index = 0    -> x
     | x::xs                   -> extract_value xs (index-1)
-    | _                       -> failwith "Fejl 40"
+    | _                       -> failwith "Array extraction error"
 
 let rec evaluate_arr arr index arr_list =
     match arr_list with
     | (a,xs)::ys when a = arr -> extract_value xs index
     | (a,xs)::ys              -> evaluate_arr arr index ys
-    | _                       -> failwith "Fejl 40"
+    | _                       -> failwith "Array evaluation error"
 
 let rec evaluate_expr expr vars arrs =
     match expr with
@@ -101,7 +102,7 @@ let rec valid_edges pg_structure vars arrs node =
     | (node0,node1,edgeAction)::xs when node0 = node && allowed edgeAction vars arrs -> (node0,node1,edgeAction)::(valid_edges xs vars arrs node)
     | (node0,node1,edgeAction)::xs                                                   -> valid_edges xs vars arrs node
     | []                                                                             -> []
-    | _                                                                              -> failwith "Fejl 40"
+    | _                                                                              -> failwith "Edge validation error"
 
 let random n = (new System.Random()).Next(0, n)
 
@@ -109,19 +110,19 @@ let rec interpret_var var value var_list =
     match var_list with
     | (x,n)::xs when x = var  -> (x,value)::xs
     | (x,n)::xs               -> (x,n)::(interpret_var var value xs)
-    | _                       -> failwith "Fejl 40"
+    | _                       -> failwith "Variable interpretation error"
 
 let rec update_arr index value value_list =
     match value_list with
     | x::xs when index = 0    -> value::xs
     | x::xs                   -> x::(update_arr (index-1) value xs)
-    | _                       -> failwith "Fejl 40"
+    | _                       -> failwith "Array update error"
 
 let rec interpret_arr arr index value arr_list =
     match arr_list with
     | (a,xs)::ys when a = arr -> (a,update_arr index value xs)::ys
     | (a,xs)::ys              -> (a,xs)::interpret_arr arr index value ys
-    | _                       -> failwith "Fejl 40"
+    | _                       -> failwith "Array interpretation error"
 
 let arrow x =
     match x with
@@ -147,12 +148,15 @@ let rec runner pg_structure vars arrs node_current node_final =
     //arrs = [("X",[2;3]]);("Y",[5])]
     let valid_list = valid_edges pg_structure vars arrs node_current
     let length = List.fold (fun s x -> s + 1) 0 valid_list
-    let edge = extract_value valid_list (random length)
+    let edge =  if length <> 0 then
+                    extract_value valid_list (random length)
+                else
+                    (node_current,node_final,Skip)
     match edge with
     | (-1,-1,action)                         -> "Status: terminated \n" + formatter node_current vars arrs
     | (node0,node1,action) when length = 0   -> "Status: stuck \n" + formatter node_current vars arrs
     | (node0,node1,action)                   -> match action with
                                                 | VarAssign(x,y)     -> runner pg_structure (interpret_var x (evaluate_expr y vars arrs) vars) arrs node1 node_final
                                                 | ArrAssign(x,y,z)   -> runner pg_structure vars (interpret_arr x (Convert.ToInt32(evaluate_expr y vars arrs)) (evaluate_expr z vars arrs) arrs) node1 node_final
+                                                | Test(x)            -> runner pg_structure vars arrs node1 node_final
                                                 | Skip               -> runner pg_structure vars arrs node1 node_final
-                                                | _                  -> failwith "Fejl 40"
