@@ -13,7 +13,6 @@ open Lexer
 #load "Interpreter.fs"
 open Interpreter
 
-let det = true
 let startNode = 0
 let endNode = -1
 let mutable counter = 0
@@ -24,7 +23,7 @@ let mutable counter = 0
 let rec stepwise startnode structure memory
   if interpreter edge = true 
     stepwise newnode structure updated mem
-  else if no valid edges
+  else if no valueid edges
     stuck = true
 
   if stuck or terminated
@@ -85,6 +84,38 @@ let pg input node0 node1 det =
   else
     "digraph program_graph {rankdir=LR;\nnode [shape = circle]; q▷;\nnode [shape = doublecircle]; q◀;\nnode [shape = circle]\n" + (edges input node0 node1) + "}"
 
+let rec init_vars i = 
+  if i > 0 then
+    printf "Enter variable name (string): "
+    let var = Console.ReadLine()
+    printf "Enter variable value (float): "
+    let value = float (Console.ReadLine())
+    (var,value)::(init_vars (i-1))
+  else
+    []
+
+let rec build_array() =
+  printf "Enter array value (float), insert nothing to continue: "
+  let value = Console.ReadLine()
+  match value with
+    | "" -> []
+    | _  -> (float value)::build_array()
+
+let rec init_arrs i = 
+  if i > 0 then
+    printf "Enter array name (string): "
+    let arr = Console.ReadLine()
+    let values = build_array()
+    (arr,values)::(init_arrs (i-1))
+  else
+    []
+
+let parse_bool s =
+  match s with
+  | "true"  -> true
+  | "false" -> false
+  | _       -> failwith ("Error: expected bool but recieved: " + s)
+
 // We
 let parse input =
   // translate string into a buffer of characters
@@ -100,23 +131,31 @@ let rec compute =
   
   let e = parse (Console.ReadLine())
 
-  (*
+  printf "Enter deterministic value (true, false): "
 
-  printf "Enter variables (e.g. [(x,10);(y,5)]: "
+  let det = parse_bool (Console.ReadLine())
+
+  printf "Enter number of steps (integer): "
+
+  let steps = Convert.ToInt32(Console.ReadLine())
+
+  printf "Enter number of variables (integer): "
+
+  let i = Convert.ToInt32(Console.ReadLine())
+
+  let vars = init_vars i
+
+  printf "Enter number of arrays (integer): "
   
-  let vars = parse (Console.ReadLine())
+  let j = Convert.ToInt32(Console.ReadLine())
 
-  printf "Enter arrays (e.g. [(A,[1;2]);(B,[3;4;5])]: "
-  
-  let arrs = parse (Console.ReadLine())
-
-  *)
+  let arrs = init_arrs j
 
   //printfn "\n%s" (pg e "▷" "◀" det)
     
   //printfn "\n%A\n" e
 
-  printfn "\n%A" (runner (pg_structure e startNode endNode det) [("x",10.0);("y",5.0)] [("A",[1.0;2.0]);("B",[3.0;4.0;5.0])] startNode endNode)
+  printfn "\n%s" (runner (pg_structure e startNode endNode det) vars arrs startNode endNode steps)
 
 // Start interacting with the user
 compute

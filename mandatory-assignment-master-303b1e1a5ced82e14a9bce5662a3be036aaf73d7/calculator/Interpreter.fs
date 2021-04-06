@@ -143,7 +143,7 @@ let rec format_arrs arrs =
 let formatter node vars arrs =
     "Node: q" + (arrow node) + "\n" + (format_vars vars) + (format_arrs arrs)
 
-let rec runner pg_structure vars arrs node_current node_final =
+let rec runner pg_structure vars arrs node_current node_final steps =
     //vars = [("x",2);("y",5)]
     //arrs = [("X",[2;3]]);("Y",[5])]
     let valid_list = valid_edges pg_structure vars arrs node_current
@@ -153,10 +153,11 @@ let rec runner pg_structure vars arrs node_current node_final =
                 else
                     (node_current,node_final,Skip)
     match edge with
-    | (-1,-1,action)                         -> "Status: terminated \n" + formatter node_current vars arrs
-    | (node0,node1,action) when length = 0   -> "Status: stuck \n" + formatter node_current vars arrs
-    | (node0,node1,action)                   -> match action with
-                                                | VarAssign(x,y)     -> runner pg_structure (interpret_var x (evaluate_expr y vars arrs) vars) arrs node1 node_final
-                                                | ArrAssign(x,y,z)   -> runner pg_structure vars (interpret_arr x (Convert.ToInt32(evaluate_expr y vars arrs)) (evaluate_expr z vars arrs) arrs) node1 node_final
-                                                | Test(x)            -> runner pg_structure vars arrs node1 node_final
-                                                | Skip               -> runner pg_structure vars arrs node1 node_final
+    | (-1,-1,action)                            -> "Status: terminated \n" + formatter node_current vars arrs
+    | (node0,node1,action) when length = 0      -> "Status: stuck \n" + formatter node_current vars arrs
+    | (node0,node1,action) when steps = 0       -> "Status: out of steps \n" + formatter node_current vars arrs
+    | (node0,node1,action)                      -> match action with
+                                                    | VarAssign(x,y)     -> runner pg_structure (interpret_var x (evaluate_expr y vars arrs) vars) arrs node1 node_final (steps-1)
+                                                    | ArrAssign(x,y,z)   -> runner pg_structure vars (interpret_arr x (Convert.ToInt32(evaluate_expr y vars arrs)) (evaluate_expr z vars arrs) arrs) node1 node_final (steps-1)
+                                                    | Test(x)            -> runner pg_structure vars arrs node1 node_final (steps-1)
+                                                    | Skip               -> runner pg_structure vars arrs node1 node_final (steps-1)
