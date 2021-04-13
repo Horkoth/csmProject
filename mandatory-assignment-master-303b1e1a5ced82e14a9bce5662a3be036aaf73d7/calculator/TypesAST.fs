@@ -42,3 +42,8 @@ type edge_action =
   | ArrAssign of (string * expr * expr)
   | Skip
   | Test of bool
+
+type sign =
+  | Plus
+  | Zero
+  | Minus

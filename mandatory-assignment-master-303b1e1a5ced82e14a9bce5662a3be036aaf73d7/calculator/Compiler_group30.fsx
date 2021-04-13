@@ -12,6 +12,8 @@ open Parser
 open Lexer
 #load "Interpreter.fs"
 open Interpreter
+#load "SignAnalyzer.fs"
+open SignAnalyzer
 
 let startNode = 0
 let endNode = -1
@@ -110,6 +112,38 @@ let rec init_arrs i =
   else
     []
 
+let interpret_abstract_value i =
+  match i with
+  | "+" -> Plus
+  | "-" -> Minus
+  | "0" -> Zero
+
+let rec init_abstract_vars i = 
+  if i > 0 then
+    printf "Enter variable name (string): "
+    let var = Console.ReadLine()
+    printf "Enter variable value (+,-,0): "
+    let value = interpret_abstract_value (Console.ReadLine())
+    (var,value)::(init_abstract_vars (i-1))
+  else
+    []
+
+let rec build_abstract_array() =
+  printf "Enter array value (+,-,0), insert nothing to continue: "
+  let value = Console.ReadLine()
+  match value with
+    | "" -> []
+    | _  -> (interpret_abstract_value value)::build_abstract_array()
+
+let rec init_abstract_arrs i = 
+  if i > 0 then
+    printf "Enter array name (string): "
+    let arr = Console.ReadLine()
+    let values = build_abstract_array()
+    (arr,values)::(init_abstract_arrs (i-1))
+  else
+    []
+
 let parse_bool s =
   match s with
   | "true"  -> true
@@ -127,6 +161,7 @@ let parse input =
 
 // We implement here the function that interacts with the user
 let rec compute =
+  (*
   printf "Enter a command: "
   
   let e = parse (Console.ReadLine())
@@ -150,12 +185,39 @@ let rec compute =
   let j = Convert.ToInt32(Console.ReadLine())
 
   let arrs = init_arrs j
+  *)
 
   //printfn "\n%s" (pg e "▷" "◀" det)
     
   //printfn "\n%A\n" e
 
-  printfn "\n%s" (runner (pg_structure e startNode endNode det) vars arrs startNode endNode steps)
+  //printfn "\n%s" (runner (pg_structure e startNode endNode det) vars arrs startNode endNode steps)
+
+  printf "Enter a command: "
+  
+  let e = parse (Console.ReadLine())
+
+  printf "Enter deterministic value (true, false): "
+
+  let det = parse_bool (Console.ReadLine())
+
+  //printf "Enter number of steps (integer): "
+
+  //let steps = Convert.ToInt32(Console.ReadLine())
+
+  printf "Enter number of variables (integer): "
+
+  let i = Convert.ToInt32(Console.ReadLine())
+
+  let abstract_vars = init_abstract_vars i
+
+  printf "Enter number of arrays (integer): "
+  
+  let j = Convert.ToInt32(Console.ReadLine())
+
+  let abstract_arrs = init_abstract_arrs j
+
+  printfn "\n%s" (abstract_runner (pg_structure e startNode endNode det) abstract_vars abstract_arrs startNode endNode)
 
 // Start interacting with the user
 compute
