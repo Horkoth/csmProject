@@ -45,18 +45,25 @@ let pg_structure input node0 node1 det =
   else
     (edges input node0 node1)
 
-let rec evaluate_var var var_list =
-    match var_list with
-    | (v,n)::vs when v = var  -> n
-    | (v,n)::vs               -> evaluate_var var vs
-    | _                       -> failwith "Variable evaluation error"
+let rec evaluate_var var mem node =
+    match mem with
+    | (n,vars)::mems when n = node  -> extract_value var vars []
+    | (n,vars)::mems                -> evaluate_var var mems node
+    | _                             -> failwith "Variable evaluation error"
 
-let rec extract_value value_list index =
-    match value_list with
-    | x::xs when index = 0    -> x
-    | x::[] when index = 0    -> x
-    | x::xs                   -> extract_value xs (index-1)
-    | _                       -> failwith "Array extraction error"
+let rec extract_value var vars results =
+    match vars with
+    | tuples::vs when List.contains (sub_extract_value var tuples) results -> extract_value var vs results
+    | tuples::vs                                                           -> extract_value var vs (results@(sub_extract_value var tuples))
+    | []                                                                   -> results
+    | _                                                                    -> failwith "Array extraction error"
+
+let rec sub_extract_value var tuples = 
+    match tuples with
+    | (name,values)::tupless when name = var -> values
+    | tuple::tupless                         -> sub_extract_value var tupless
+    | []                                     -> []
+    | _                                      -> failwith "Array sub-extraction error"
 
 let rec evaluate_arr arr index arr_list =
     match arr_list with
@@ -208,37 +215,37 @@ let evaluate_smaller x y =
     | Plus,Zero   -> false
     | Plus,Plus   -> true
 
-let rec evaluate_expr expr vars arrs =
+let rec evaluate_expr expr mem node =
     match expr with
     | Num(x)            -> evaluate_sign x
-    | Var(x)            -> evaluate_sign (evaluate_var x vars)
-    | Times(x,y)        -> evaluate_times (evaluate_expr x vars arrs) (evaluate_expr y vars arrs)
-    | Div(x,y)          -> evaluate_division (evaluate_expr x vars arrs) (evaluate_expr y vars arrs)
-    | Plus(x,y)         -> evaluate_plus (evaluate_expr x vars arrs) (evaluate_expr y vars arrs)
-    | Minus(x,y)        -> evaluate_minus (evaluate_expr x vars arrs) (evaluate_expr y vars arrs)
-    | Pow(x,y)          -> evaluate_pow (evaluate_expr x vars arrs) (evaluate_expr y vars arrs)
-    | Uminus(x)         -> evaluate_uminus (evaluate_expr x vars arrs)
-    | ArrIndex(x,y)     -> evaluate_sign (evaluate_arr x (Convert.ToInt32(evaluate_expr y)) arrs)
+    | Var(x)            -> evaluate_sign (evaluate_var x mem node)
+    | Times(x,y)        -> evaluate_times (evaluate_expr x mem node) (evaluate_expr y mem node)
+    | Div(x,y)          -> evaluate_division (evaluate_expr x mem node) (evaluate_expr y mem node)
+    | Plus(x,y)         -> evaluate_plus (evaluate_expr x mem node) (evaluate_expr y mem node)
+    | Minus(x,y)        -> evaluate_minus (evaluate_expr x mem node) (evaluate_expr y mem node)
+    | Pow(x,y)          -> evaluate_pow (evaluate_expr x mem node) (evaluate_expr y mem node)
+    | Uminus(x)         -> evaluate_uminus (evaluate_expr x mem node)
+    | ArrIndex(x,y)     -> evaluate_sign (evaluate_var x (Convert.ToInt32(evaluate_expr y)) mem node)
 
-let rec evaluate_bool bool vars arrs =
+let rec evaluate_bool bool mem node =
     match bool with
     | True              -> true
     | False             -> false
-    | Band(x,y)         -> (evaluate_bool x vars arrs) && (evaluate_bool y vars arrs)
-    | Bor(x,y)          -> (evaluate_bool x vars arrs) || (evaluate_bool y vars arrs)
-    | And(x,y)          -> (evaluate_bool x vars arrs) && (evaluate_bool y vars arrs)
-    | Or(x,y)           -> (evaluate_bool x vars arrs) || (evaluate_bool y vars arrs)
-    | Equal(x,y)        -> evaluate_equal (evaluate_expr x vars arrs) (evaluate_expr y vars arrs)
-    | Nequal(x,y)       -> evaluate_nequal (evaluate_expr x vars arrs) (evaluate_expr y vars arrs)
-    | Not(x)            -> not (evaluate_bool x vars arrs)
-    | GreaterEqual(x,y) -> evaluate_greater_equal (evaluate_expr x vars arrs) (evaluate_expr y vars arrs)
-    | SmallerEqual(x,y) -> evaluate_smaller_equal (evaluate_expr x vars arrs) (evaluate_expr y vars arrs)
-    | Greater(x,y)      -> evaluate_greater (evaluate_expr x vars arrs) (evaluate_expr y vars arrs)
-    | Smaller(x,y)      -> evaluate_smaller (evaluate_expr x vars arrs) (evaluate_expr y vars arrs)
+    | Band(x,y)         -> (evaluate_bool x mem node) && (evaluate_bool y mem node)
+    | Bor(x,y)          -> (evaluate_bool x mem node) || (evaluate_bool y mem node)
+    | And(x,y)          -> (evaluate_bool x mem node) && (evaluate_bool y mem node)
+    | Or(x,y)           -> (evaluate_bool x mem node) || (evaluate_bool y mem node)
+    | Equal(x,y)        -> evaluate_equal (evaluate_expr x mem node) (evaluate_expr y mem node)
+    | Nequal(x,y)       -> evaluate_nequal (evaluate_expr x mem node) (evaluate_expr y mem node)
+    | Not(x)            -> not (evaluate_bool x mem node)
+    | GreaterEqual(x,y) -> evaluate_greater_equal (evaluate_expr x mem node) (evaluate_expr y mem node)
+    | SmallerEqual(x,y) -> evaluate_smaller_equal (evaluate_expr x mem node) (evaluate_expr y mem node)
+    | Greater(x,y)      -> evaluate_greater (evaluate_expr x mem node) (evaluate_expr y mem node)
+    | Smaller(x,y)      -> evaluate_smaller (evaluate_expr x mem node) (evaluate_expr y mem node)
 
-let allowed edgeAction vars arrs =
+let allowed edgeAction mem =
     match edgeAction with
-        | Test(x)           -> evaluate_bool x vars arrs
+        | Test(x)           -> evaluate_bool x mem
         | _                 -> true
 
 let rec valid_edges pg_structure vars arrs node =
@@ -307,11 +314,19 @@ let rec runner pg_structure vars arrs node_current node_final steps =
                                                     | Test(x)            -> runner pg_structure vars arrs node1 node_final (steps-1)
                                                     | Skip               -> runner pg_structure vars arrs node1 node_final (steps-1)
 *)
-let rec abstract_runner pg_structure abstract_vars abstract_arrs node_current node_final =
+
+let rec queue_initializer pg_structure node =
+    match pg_structure with
+    | (n,x,y)::pgss when n = node -> (n,x,y)::(queue_initializer pgss node)
+    | []                          -> []
+    | (n,x,y)::pgss               -> (queue_initializer pgss node)
+
+let rec abstract_runner pg_structure memory node_final queue =
     //vars = [("x",Plus);("y",Zero)]
     //arrs = [("X",[Plus;Zero]]);("Y",[Minus])]
-    [[0;1];[2;3]]
+    match queue with
+    | egde::queues when not is_valid edge arbstract_vars abstract_arrs -> abstract_runner pg_structure memory node_final queues
+    | edge::queues -> abstract_runner pg_structure (update_memory edge memory) node_final (update_queue edge queues memory)
 
-let rec power_set pg_structure visited_notes node_current node_final set_var set_arr =
-    match pg_structure with
-    | (node_current,x,y)::pgss -> 
+let abstract_initializer pg_structure memory node_start node_final =
+    abstract_runner pg_structure memory node_final (queue_initializer pg_structure node_start)

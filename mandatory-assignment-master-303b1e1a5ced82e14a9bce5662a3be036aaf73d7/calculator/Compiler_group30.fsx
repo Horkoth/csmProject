@@ -118,37 +118,52 @@ let interpret_abstract_value i =
   | "-" -> Minus
   | "0" -> Zero
 
-let rec init_abstract_vars i = 
+let rec insert_var var value memory node =
+  match memory with
+  | (n,vars::vars_all)::ms when n = node -> (n,(vars@[(var,value)])::vars_all)::ms
+  | m::ms                                -> m::(insert_var var value ms node)
+  | []                                   -> []
+
+let rec init_abstract_vars i memory node = 
   if i > 0 then
     printf "Enter variable name (string): "
     let var = Console.ReadLine()
     printf "Enter variable value (+,-,0): "
     let value = interpret_abstract_value (Console.ReadLine())
-    (var,value)::(init_abstract_vars (i-1))
+    init_abstract_vars (i-1) (insert_var var [value] memory node) node
+    // [(q0;  [ [(x,[Plus]);(y,[Minus]);(A,[Minus;Plus])] ; [(x,[Zero]);(y,[Minus]);(A,[Minus;Plus])] ]  )]
   else
-    []
+    memory
 
-let rec build_abstract_array() =
+let rec build_abstract_array list =
   printf "Enter array value (+,-,0), insert nothing to continue: "
   let value = Console.ReadLine()
   match value with
-    | "" -> []
-    | _  -> (interpret_abstract_value value)::build_abstract_array()
+    | ""                          -> []
+    | x when List.contains x list -> build_abstract_array list
+    | _                           -> (interpret_abstract_value value)::build_abstract_array list
 
-let rec init_abstract_arrs i = 
+let rec init_abstract_arrs i memory node = 
   if i > 0 then
     printf "Enter array name (string): "
     let arr = Console.ReadLine()
-    let values = build_abstract_array()
-    (arr,values)::(init_abstract_arrs (i-1))
+    let values = build_abstract_array []
+    init_abstract_arrs (i-1) (insert_var arr values memory node) node
   else
-    []
+    memory
 
 let parse_bool s =
   match s with
   | "true"  -> true
   | "false" -> false
   | _       -> failwith ("Error: expected bool but recieved: " + s)
+
+let rec nodes_list pg_structure memory = 
+  match pg_structure with
+  | (n0,n1,x)::structure when not List.contains n0 memory -> nodes_list structure (memory::(n0,[]))
+
+let init_memory pg_structure =
+  nodes_list pg_structure []
 
 // We
 let parse input =
@@ -205,19 +220,23 @@ let rec compute =
 
   //let steps = Convert.ToInt32(Console.ReadLine())
 
+  let structure = (pg_structure e startNode endNode det)
+
+  let mutable memory = init_memory structure
+
   printf "Enter number of variables (integer): "
 
   let i = Convert.ToInt32(Console.ReadLine())
 
-  let abstract_vars = init_abstract_vars i
+  memory = init_abstract_vars i memory startNode
 
   printf "Enter number of arrays (integer): "
   
   let j = Convert.ToInt32(Console.ReadLine())
 
-  let abstract_arrs = init_abstract_arrs j
+  memory = init_abstract_arrs j memory startNode
 
-  printfn "\n%s" (abstract_runner (pg_structure e startNode endNode det) abstract_vars abstract_arrs startNode endNode)
+  printfn "\n%s" (abstract_initializer structure memory startNode endNode)
 
 // Start interacting with the user
 compute
