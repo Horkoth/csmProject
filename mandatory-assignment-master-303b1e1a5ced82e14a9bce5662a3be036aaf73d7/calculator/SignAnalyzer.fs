@@ -325,7 +325,7 @@ let rec abstract_runner pg_structure memory node_final queue =
     //vars = [("x",Plus);("y",Zero)]
     //arrs = [("X",[Plus;Zero]]);("Y",[Minus])]
     match queue with
-    | egde::queues when not is_valid edge arbstract_vars abstract_arrs -> abstract_runner pg_structure memory node_final queues
+    | egde::queues when not allowed edge memory -> abstract_runner pg_structure memory node_final queues
     | edge::queues -> abstract_runner pg_structure (update_memory edge memory) node_final (update_queue edge queues memory)
 
 let abstract_initializer pg_structure memory node_start node_final =
