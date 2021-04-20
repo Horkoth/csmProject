@@ -1,7 +1,9 @@
 module SignAnalyzer
 open System
 
-//let mutable counter = 0
+//
+//Program graph constructor
+//
 
 let pg_structure input node0 node1 det =
   let mutable counter = 0
@@ -45,63 +47,23 @@ let pg_structure input node0 node1 det =
   else
     (edges input node0 node1)
 
-let rec update_memory difference_list mem node =
-    match mem with
-    | (n,vars)::mems when n = node -> (n,difference_list@vars)::mems
-    | (n,vars)::mems               -> (n,vars)::(update_memory difference_list mems node)
-    | _                            -> failwith "Memory update error"
+//
+//General duplicate remover: removes duplicates from list if any
+//
 
-let rec node_power_sets mem node =
-    match mem with
-    | (n,vars)::mems when n = node -> vars
-    | (n,vars)::mems               -> node_power_sets mems node
-    | _                            -> failwith "Error node_power_sets error"
+let rec remove_duplicates_helper list resulting_list =
+    match list with
+    | x::xs when List.contains x resulting_list -> remove_duplicates_helper xs resulting_list
+    | x::xs                                     -> remove_duplicates_helper xs (x::resulting_list)
+    | []                                        -> resulting_list
+    | _                                         -> failwith "Duplicate removal error"
 
-let rec evaluate_var var mem =
-    match mem with
-    | (v,vars)::mems when v = var -> vars
-    | (v,vars)::mems              -> evaluate_var var mems
-    | _                           -> failwith "Variable evaluation error"
+let rec remove_duplicates list =
+    remove_duplicates_helper list []
 
-let rec remove_duplicates_helper power_sets power_result =
-    match power_sets with
-    | x::xs when List.contains x power_result -> remove_duplicates_helper xs power_result
-    | x::xs                                   -> remove_duplicates_helper xs (x::power_result)
-    | []                                      -> power_result
-    | _                                       -> failwith "Duplicate removal error"
-
-let rec remove_duplicates power_sets =
-    remove_duplicates_helper power_sets []
-
-//returns all values of a variable in memory for a given node (all combinations)
-(*
-let rec evaluate_var var mem node =
-    match mem with
-    | (n,vars)::mems when n = node  -> extract_value var vars []
-    | (n,vars)::mems                -> evaluate_var var mems node
-    | _                             -> failwith "Variable evaluation error"
-
-let rec extract_value var vars results =
-    match vars with
-    | tuples::vs when List.contains (sub_extract_value var tuples) results -> extract_value var vs results
-    | tuples::vs                                                           -> extract_value var vs (results@(sub_extract_value var tuples))
-    | []                                                                   -> results
-    | _                                                                    -> failwith "Array extraction error"
-
-let rec sub_extract_value var tuples = 
-    match tuples with
-    | (name,values)::tupless when name = var -> values
-    | tuple::tupless                         -> sub_extract_value var tupless
-    | []                                     -> []
-    | _                                      -> failwith "Array sub-extraction error"
-
-let rec evaluate_arr arr index arr_list =
-    match arr_list with
-    | (a,xs)::ys when a = arr -> extract_value xs index
-    | (a,xs)::ys              -> evaluate_arr arr index ys
-    | _                       -> failwith "Array evaluation error"
-
-*)
+//
+//Arithmetic evaluation functions as per the books description
+//
 
 let evaluate_plus x y =
     match x,y with 
@@ -175,12 +137,9 @@ let evaluate_uminus x =
     | PlusSign  -> MinusSign::[]
     | _         -> failwith "Evaluation of type evaluate_uminus error"
 
-let evaluate_sign x =
-    match x with 
-    | 0.0            -> ZeroSign::[]
-    | x when x<0.0   -> MinusSign::[]
-    | x when x>0.0   -> PlusSign::[]
-    | _              -> failwith "Evaluation of type evaluate_sign error"
+//
+//Boolean evaluation functions as per the books description
+//
 
 let evaluate_equal x y =
     match x,y with 
@@ -260,7 +219,11 @@ let evaluate_smaller x y =
     | PlusSign,PlusSign   -> true
     | _                   -> failwith "Evaluation of type evaluate_smaller error"
 
-let rec evaluate_derived_expr arithmetic arg0 arg1 =
+//
+//Expression evaluation: given an arithmetic expression type, evaluates two non-list abstract arguments for the specified expression
+//
+
+let rec evaluate_abstract_expr arithmetic arg0 arg1 =
     match arithmetic with
     | Times(x,y)        -> evaluate_times arg0 arg1
     | Div(x,y)          -> evaluate_division arg0 arg1
@@ -269,7 +232,11 @@ let rec evaluate_derived_expr arithmetic arg0 arg1 =
     | Pow(x,y)          -> evaluate_pow arg0 arg1
     | _                 -> failwith "Derived expression evaluation error"
 
-let evaluate_derived_bool test arg0 arg1 =
+//
+//Boolean evaluation: given an boolean test type, evaluates two non-list abstract arguments for the specified boolean test
+//
+
+let evaluate_abstract_bool test arg0 arg1 =
     match test with
     | Equal(x,y)        -> evaluate_equal arg0 arg1
     | Nequal(x,y)       -> evaluate_nequal arg0 arg1
@@ -279,15 +246,42 @@ let evaluate_derived_bool test arg0 arg1 =
     | Smaller(x,y)      -> evaluate_smaller arg0 arg1
     | _                 -> failwith "Derived boolean evaluation error"
 
-let rec evaluate_uminus_list value_list =
-    match value_list with
-    | x::xs -> (evaluate_uminus x)@(evaluate_uminus_list xs)
-    | []    -> []
-    | _     -> failwith "Error evaluate_uminus_list error"
+//
+//  Data structure naming
+//
+//  memory:     [ (node, [power_sets]) ; (node, [power_sets]) ; ... ]
+//  power_sets: [ [power_set] ; [power_set] ; ... ]
+//  power_set:  [ ("variable_name", [values]) ; ("variable_name", [values]) ; ... ]
+//
+
+//
+//Sign evaluator: returns abstract value from decimal input
+//
+
+let evaluate_sign x =
+    match x with 
+    | 0.0            -> ZeroSign::[]
+    | x when x<0.0   -> MinusSign::[]
+    | x when x>0.0   -> PlusSign::[]
+    | _              -> failwith "Evaluation of type evaluate_sign error"
+
+//
+//Variable evaluation: returns the list of value(s) for the inputted variable in the inputted power_set
+//
+
+let rec evaluate_var var power_set =
+    match power_set with
+    | (v,vars)::mems when v = var -> vars
+    | (v,vars)::mems              -> evaluate_var var mems
+    | _                           -> failwith "Variable evaluation error"
+
+//
+//all_expr_combinations is a helper function for evaluate_expr that takes lists of abstract values, finds all combinations between these lists, and evaluates them as non-list abstract expression
+//
 
 let rec all_expr_combinations_helper2 expr value value_list =
     match value_list with
-    | x::xs -> (evaluate_derived_expr expr value x)@(all_expr_combinations_helper2 expr value xs)
+    | x::xs -> (evaluate_abstract_expr expr value x)@(all_expr_combinations_helper2 expr value xs)
     | []    -> []
     | _     -> failwith "Error all_expr_combinations_helper2 error"
 
@@ -300,173 +294,161 @@ let rec all_expr_combinations_helper1 expr value_list0 value_list1  =
 let all_expr_combinations expr value_list0 value_list1 = 
     remove_duplicates (all_expr_combinations_helper1 expr value_list0 value_list1)
 
-let rec all_abstract_combinations_helper bool value value_list =
+//
+//evaluate_uminus_list is similar to but only iterates through a single list
+//
+
+let rec evaluate_uminus_list value_list =
     match value_list with
-    | x::xs when evaluate_derived_bool bool value x -> true
-    | x::xs                                         -> all_abstract_combinations_helper bool value xs
+    | x::xs -> (evaluate_uminus x)@(evaluate_uminus_list xs)
+    | []    -> []
+    | _     -> failwith "Error evaluate_uminus_list error"
+
+//
+//all_bool_combinations is a helper function for evaluate_bool that takes lists of abstract values, finds all combinations between these lists, and evaluates them as non-list abstract boolean tests
+//
+
+let rec all_bool_combinations_helper bool value value_list =
+    match value_list with
+    | x::xs when evaluate_abstract_bool bool value x -> true
+    | x::xs                                         -> all_bool_combinations_helper bool value xs
     | []                                            -> false
     | _                                             -> failwith "Error all_abstract_combinations_helper error"
 
-let rec all_abstract_combinations bool value_list0 value_list1  =
+let rec all_bool_combinations bool value_list0 value_list1  =
     match value_list0 with
-    | x::xs when all_abstract_combinations_helper bool x value_list1 -> true
-    | x::xs                                                          -> all_abstract_combinations bool xs value_list1
+    | x::xs when all_bool_combinations_helper bool x value_list1 -> true
+    | x::xs                                                          -> all_bool_combinations bool xs value_list1
     | []                                                             -> false
     | _                                                              -> failwith "Error all_abstract_combinations error"
 
-//memory -> power_sets -> power_set
+//
+//Expression evaluator that can reduce any decimal value and/or variable expression to sets of single abstract values and send these to be computed by smaller functions
+//
 
-let rec evaluate_expr expr mem =
+let rec evaluate_expr expr power_set =
     match expr with
     | Num(x)            -> evaluate_sign x
-    | Var(x)            -> evaluate_var x mem
-    | Times(x,y)        -> all_expr_combinations expr (evaluate_expr x mem) (evaluate_expr y mem)
-    | Div(x,y)          -> all_expr_combinations expr (evaluate_expr x mem) (evaluate_expr y mem)
-    | Plus(x,y)         -> all_expr_combinations expr (evaluate_expr x mem) (evaluate_expr y mem)
-    | Minus(x,y)        -> all_expr_combinations expr (evaluate_expr x mem) (evaluate_expr y mem)
-    | Pow(x,y)          -> all_expr_combinations expr (evaluate_expr x mem) (evaluate_expr y mem)
-    | Uminus(x)         -> remove_duplicates (evaluate_uminus_list (evaluate_expr x mem))
-    | ArrIndex(x,y)     -> evaluate_var x mem
+    | Var(x)            -> evaluate_var x power_set
+    | Times(x,y)        -> all_expr_combinations expr (evaluate_expr x power_set) (evaluate_expr y power_set)
+    | Div(x,y)          -> all_expr_combinations expr (evaluate_expr x power_set) (evaluate_expr y power_set)
+    | Plus(x,y)         -> all_expr_combinations expr (evaluate_expr x power_set) (evaluate_expr y power_set)
+    | Minus(x,y)        -> all_expr_combinations expr (evaluate_expr x power_set) (evaluate_expr y power_set)
+    | Pow(x,y)          -> all_expr_combinations expr (evaluate_expr x power_set) (evaluate_expr y power_set)
+    | Uminus(x)         -> evaluate_uminus_list (evaluate_expr x power_set)
+    | ArrIndex(x,y)     -> evaluate_var x power_set
     | _                 -> failwith "Expression evaluation error"
 
-let rec evaluate_bool bool mem =
+//
+//Boolean evaluator that can reduce boolean tests to combinations of their boolean and/or arithmetic components and find whether it is possible for a combination to evaluate to true
+//
+
+let rec evaluate_bool bool power_set =
     match bool with
     | True              -> true
     | False             -> false
-    | Band(x,y)         -> (evaluate_bool x mem) && (evaluate_bool y mem)
-    | Bor(x,y)          -> (evaluate_bool x mem) || (evaluate_bool y mem)
-    | And(x,y)          -> (evaluate_bool x mem) && (evaluate_bool y mem)
-    | Or(x,y)           -> (evaluate_bool x mem) || (evaluate_bool y mem)
-    | Equal(x,y)        -> all_abstract_combinations bool (evaluate_expr x mem) (evaluate_expr y mem)
-    | Nequal(x,y)       -> all_abstract_combinations bool (evaluate_expr x mem) (evaluate_expr y mem)
-    | Not(x)            -> not (evaluate_bool x mem)
-    | GreaterEqual(x,y) -> all_abstract_combinations bool (evaluate_expr x mem) (evaluate_expr y mem)
-    | SmallerEqual(x,y) -> all_abstract_combinations bool (evaluate_expr x mem) (evaluate_expr y mem)
-    | Greater(x,y)      -> all_abstract_combinations bool (evaluate_expr x mem) (evaluate_expr y mem)
-    | Smaller(x,y)      -> all_abstract_combinations bool (evaluate_expr x mem) (evaluate_expr y mem)
+    | Band(x,y)         -> (evaluate_bool x power_set) && (evaluate_bool y power_set)
+    | Bor(x,y)          -> (evaluate_bool x power_set) || (evaluate_bool y power_set)
+    | And(x,y)          -> (evaluate_bool x power_set) && (evaluate_bool y power_set)
+    | Or(x,y)           -> (evaluate_bool x power_set) || (evaluate_bool y power_set)
+    | Equal(x,y)        -> all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set)
+    | Nequal(x,y)       -> all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set)
+    | Not(x)            -> not (evaluate_bool x power_set)
+    | GreaterEqual(x,y) -> all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set)
+    | SmallerEqual(x,y) -> all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set)
+    | Greater(x,y)      -> all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set)
+    | Smaller(x,y)      -> all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set)
     | _                 -> failwith "Boolean evaluation error"
 
-let rec valid_power_sets vars test_action =
-    match vars with
-    | var::varss when evaluate_bool test_action var -> var::(valid_power_sets varss test_action)
-    | var::varss                                    -> (valid_power_sets varss test_action)
-    | []                                            -> []
-    | _                                             -> failwith "Powerset validation error"
+//
+//Power_sets extracter: returns the power_sets from memory for an inputted node
+//
 
-(*
+let rec power_sets_of_node memory node =
+    match memory with
+    | (n,vars)::mems when n = node -> vars
+    | (n,vars)::mems               -> power_sets_of_node mems node
+    | _                            -> failwith "Error power_sets_of_node error"
 
-let allowed edgeAction mem =
-    match edgeAction with
-        | Test(x)           -> evaluate_bool x mem
-        | _                 -> true
+//
+//Memory updator: returns the updated memory where difference_list has been added to the power_sets of a specified node
+//
 
-let rec valid_edges pg_structure vars arrs node =
-    match pg_structure with
-    | (node0,node1,edgeAction)::xs when node0 = node && allowed edgeAction vars arrs -> (node0,node1,edgeAction)::(valid_edges xs vars arrs node)
-    | (node0,node1,edgeAction)::xs                                                   -> valid_edges xs vars arrs node
-    | []                                                                             -> []
-    | _                                                                              -> failwith "Edge validation error"
+let rec update_memory difference_list memory node =
+    match memory with
+    | (n,vars)::mems when n = node -> (n,difference_list@vars)::mems
+    | (n,vars)::mems               -> (n,vars)::(update_memory difference_list mems node)
+    | _                            -> failwith "Memory update error"
 
-*)
+//
+//Power_sets tester: returns power_sets that passes a boolean test
+//
 
-let rec update_abstract_values power_set var assigned_value =
+let rec valid_power_sets power_sets bool_test =
+    match power_sets with
+    | power_set::power_setss when evaluate_bool bool_test power_set -> power_set::(valid_power_sets power_setss bool_test)
+    | power_set::power_setss                                          -> (valid_power_sets power_setss bool_test)
+    | []                                                              -> []
+    | _                                                               -> failwith "Powerset validation error"
+
+//
+//Value replacor: replaces the old value of a variable in a power_set with a new one
+//
+
+let rec replace_abstract_values power_set var assigned_value =
     match power_set with
     | (x,values)::abstract_values when x = var -> (x,[assigned_value])::abstract_values
-    | (x,values)::abstract_values              -> (x,values)::(update_abstract_values abstract_values var assigned_value)
+    | (x,values)::abstract_values              -> (x,values)::(replace_abstract_values abstract_values var assigned_value)
     | []                                       -> []
     | _                                        -> failwith "Value update error"
 
-let rec assigned_power_sets_helper power_set var assigned_values =
-    match assigned_values with
-    | x::xs -> (update_abstract_values power_set var x)::(assigned_power_sets_helper power_set var xs)
-    | []    -> []
-    | _     -> failwith "Error  assigned_power_sets_helper error"
-
-let rec assigned_power_sets power_sets var assigned_expr =
-    match power_sets with
-    | x::xs -> (assigned_power_sets_helper x var (evaluate_expr assigned_expr x))@(assigned_power_sets xs var assigned_expr)
-    | []    -> []
-    | _     -> failwith "Error  assigned_power_sets error"
+//
+//Value adder: adds values to an array type variable in a power_set
+//
 
 let rec add_abstract_values power_set var assigned_value =
     match power_set with
-    | (x,values)::abstract_values when x = var && List.contains assigned_value values -> (x,values)::abstract_values
-    | (x,values)::abstract_values when x = var                                        -> (x,assigned_value::values)::abstract_values
-    | (x,values)::abstract_values                                                     -> (x,values)::(update_abstract_values abstract_values var assigned_value)
-    | []                                                                              -> []
-    | _                                                                               -> failwith "Value addition error"
+    | (x,values)::vars when x = var && List.contains assigned_value values -> (x,values)::vars
+    | (x,values)::vars when x = var                                        -> (x,assigned_value::values)::vars
+    | (x,values)::vars                                                     -> (x,values)::(replace_abstract_values vars var assigned_value)
+    | []                                                                   -> []
+    | _                                                                    -> failwith "Value addition error"
 
-let rec assigned_power_sets_arr_helper power_set arr assigned_values =
+//
+//Variable assigner: evaluates an expression and assigns it to a specified variable in power_sets
+//
+
+let rec var_assignment_in_power_sets_helper power_set var assigned_values =
     match assigned_values with
-    | x::xs -> (add_abstract_values power_set arr x)::(assigned_power_sets_helper power_set arr xs)
+    | x::xs -> (replace_abstract_values power_set var x)::(var_assignment_in_power_sets_helper power_set var xs)
     | []    -> []
-    | _     -> failwith "Error  assigned_power_sets_arr_helper error"
+    | _     -> failwith "Error  var_assignment_in_power_sets_helper error"
 
-let rec assigned_power_sets_arr power_sets arr assigned_expr =
+let rec var_assignment_in_power_sets power_sets var assigned_expr =
     match power_sets with
-    | x::xs -> (assigned_power_sets_helper x arr (evaluate_expr assigned_expr x))@(assigned_power_sets xs arr assigned_expr)
+    | x::xs -> (var_assignment_in_power_sets_helper x var (evaluate_expr assigned_expr x))@(var_assignment_in_power_sets xs var assigned_expr)
     | []    -> []
-    | _     -> failwith "Error  assigned_power_sets_arr error"
+    | _     -> failwith "Error var_assignment_in_power_sets error"
 
-let random n = (new System.Random()).Next(0, n)
+//
+//Array assigner: evaluates an expression and assigns it to a specified array in power_sets
+//
 
-let rec interpret_var var value var_list =
-    match var_list with
-    | (x,n)::xs when x = var  -> (x,value)::xs
-    | (x,n)::xs               -> (x,n)::(interpret_var var value xs)
-    | _                       -> failwith "Variable interpretation error"
+let rec arr_assignment_in_power_sets_helper power_set arr assigned_values =
+    match assigned_values with
+    | x::xs -> (add_abstract_values power_set arr x)::(var_assignment_in_power_sets_helper power_set arr xs)
+    | []    -> []
+    | _     -> failwith "Error  arr_assignment_in_power_sets_helper error"
 
-let rec update_arr index value value_list =
-    match value_list with
-    | x::xs when index = 0    -> value::xs
-    | x::xs                   -> x::(update_arr (index-1) value xs)
-    | _                       -> failwith "Array update error"
+let rec arr_assignment_in_power_sets power_sets arr assigned_expr =
+    match power_sets with
+    | x::xs -> (var_assignment_in_power_sets_helper x arr (evaluate_expr assigned_expr x))@(var_assignment_in_power_sets xs arr assigned_expr)
+    | []    -> []
+    | _     -> failwith "Error  arr_assignment_in_power_sets error"
 
-let rec interpret_arr arr index value arr_list =
-    match arr_list with
-    | (a,xs)::ys when a = arr -> (a,update_arr index value xs)::ys
-    | (a,xs)::ys              -> (a,xs)::interpret_arr arr index value ys
-    | _                       -> failwith "Array interpretation error"
-
-let arrow x =
-    match x with
-    | 0  -> "▷"
-    | -1 -> "◀"
-    | n  -> (string n)
-
-let rec format_vars vars =
-    match vars with
-    | (x,n)::xs -> (string x) + ": " + (string n) + "\n" + (format_vars xs)
-    | []        -> ""
-
-let rec format_arrs arrs =
-    match arrs with
-    | (a,xs)::ys -> (string a) + ": " + (string xs) + "\n" + (format_arrs ys)
-    | []         -> ""
-
-let formatter node vars arrs =
-    "Node: q" + (arrow node) + "\n" + (format_vars vars) + (format_arrs arrs)
-
-(*
-let rec runner pg_structure vars arrs node_current node_final steps =
-    //vars = [("x",2);("y",5)]
-    //arrs = [("X",[2;3]]);("Y",[5])]
-    let valid_list = valid_edges pg_structure vars arrs node_current
-    let length = List.fold (fun s x -> s + 1) 0 valid_list
-    let edge =  if length <> 0 then
-                    extract_value valid_list (random length)
-                else
-                    (node_current,node_final,Skip)
-    match edge with
-    | (-1,-1,action)                            -> "Status: terminated \n" + formatter node_current vars arrs
-    | (node0,node1,action) when length = 0      -> "Status: stuck \n" + formatter node_current vars arrs
-    | (node0,node1,action) when steps = 0       -> "Status: out of steps \n" + formatter node_current vars arrs
-    | (node0,node1,action)                      -> match action with
-                                                    | VarAssign(x,y)     -> runner pg_structure (interpret_var x (evaluate_expr y vars arrs) vars) arrs node1 node_final (steps-1)
-                                                    | ArrAssign(x,y,z)   -> runner pg_structure vars (interpret_arr x (Convert.ToInt32(evaluate_expr y vars arrs)) (evaluate_expr z vars arrs) arrs) node1 node_final (steps-1)
-                                                    | Test(x)            -> runner pg_structure vars arrs node1 node_final (steps-1)
-                                                    | Skip               -> runner pg_structure vars arrs node1 node_final (steps-1)
-*)
+//
+//Outgoing edges returns a list of edges for a node in pg_structure
+//
 
 let rec outgoing_edges pg_structure node =
     match pg_structure with
@@ -474,6 +456,10 @@ let rec outgoing_edges pg_structure node =
     | (node0,node1,action)::pgss                   -> (outgoing_edges pgss node)
     | []                                           -> []
     | _                                            -> failwith "Error outgoing_edges error"
+
+//
+//Difference list builder: finds the difference between two power_sets and returns a list with only the difference
+//
 
 let rec build_difference_list_helper valid_set next_power_sets =
     match next_power_sets with
@@ -489,44 +475,51 @@ let rec build_difference_list valid_power_sets next_power_sets =
     | []                                                        -> []
     | _                                                         -> failwith "Error build_difference_list error"
 
+//
+//Queue popper: pops the queue ;)
+//
+
 let pop_queue queue =
     match queue with
     | edge::queues -> Some (edge,queues)
     | []           -> None
     | _            -> failwith "Queue popping error"
 
-let valid_combinations memory queue =
-    match queue with
-    | (node0,node1,VarAssign(x,y))::queues   -> remove_duplicates (assigned_power_sets (node_power_sets memory node0) x y)
-    | (node0,node1,ArrAssign(x,y,z))::queues -> remove_duplicates (assigned_power_sets_arr (node_power_sets memory node0) x z)
-    | (node0,node1,Test(x))::queues          -> valid_power_sets (node_power_sets memory node0) x
-    | (node0,node1,Skip)::queues             -> (node_power_sets memory node0)
-    | _                                      -> failwith "Combination validation error"
+//
+//valid_combinations travels an edge and builds a new hypothetical memory for combinations of the data that can succesfully travel the edge
+//
 
-let rec queue_initializer pg_structure node =
-    match pg_structure with
-    | (node0,node1,edge_action)::pgss when node0 = node -> (node0,node1,edge_action)::(queue_initializer pgss node)
-    | []                                                -> []
-    | (node0,node1,edge_action)::pgss                   -> (queue_initializer pgss node)
-    | _                                                 -> failwith "Queue initialization error"
+let valid_combinations memory edge =
+    match edge with
+    | (node0,node1,VarAssign(x,y))   -> remove_duplicates (var_assignment_in_power_sets (power_sets_of_node memory node0) x y)
+    | (node0,node1,ArrAssign(x,y,z)) -> remove_duplicates (arr_assignment_in_power_sets (power_sets_of_node memory node0) x z)
+    | (node0,node1,Test(x))          -> valid_power_sets (power_sets_of_node memory node0) x
+    | (node0,node1,Skip)             -> (power_sets_of_node memory node0)
+    | _                              -> failwith "Combination validation error"
+
+//
+//Main function
+//
 
 let rec abstract_runner pg_structure memory node_final queue =
-    //vars = [("x",PlusSign);("y",ZeroSign)]
-    //arrs = [("X",[PlusSign;ZeroSign]]);("Y",[MinusSign])]
     let popped_queue = pop_queue queue
     if popped_queue.IsSome then
-        let valid_power_sets_list = valid_combinations memory queue
         let edge, queues = popped_queue.Value
         let node0, node1, action = edge
-        let difference_list = build_difference_list valid_power_sets_list (node_power_sets memory (node1))
+        let valid_power_sets_list = valid_combinations memory edge
+        let difference_list = build_difference_list valid_power_sets_list (power_sets_of_node memory (node1))
         let new_memory = update_memory difference_list memory node1
         if not (List.isEmpty difference_list) then
             let mutable queues = queues
             queues <- queues@(outgoing_edges pg_structure node1)
         abstract_runner pg_structure new_memory node_final queues
     else 
-        //node_power_sets memory node_final
+        //power_sets_of_node memory node_final
         memory
 
+//
+//Initializer: initializes the main function with an initial queue
+//
+
 let abstract_initializer pg_structure memory node_start node_final =
-    abstract_runner pg_structure memory node_final (queue_initializer pg_structure node_start)
+    abstract_runner pg_structure memory node_final (outgoing_edges pg_structure node_start)
