@@ -44,6 +44,6 @@ type edge_action =
   | Test of bool
 
 type sign =
-  | Plus
-  | Zero
-  | Minus
+  | PlusSign
+  | ZeroSign
+  | MinusSign

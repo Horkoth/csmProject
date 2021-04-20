@@ -10,8 +10,8 @@ open TypesAST
 open Parser
 #load "Lexer.fs"
 open Lexer
-#load "Interpreter.fs"
-open Interpreter
+//#load "Interpreter.fs"
+//open Interpreter
 #load "SignAnalyzer.fs"
 open SignAnalyzer
 
@@ -114,13 +114,14 @@ let rec init_arrs i =
 
 let interpret_abstract_value i =
   match i with
-  | "+" -> Plus
-  | "-" -> Minus
-  | "0" -> Zero
+  | "+" -> PlusSign::[]
+  | "-" -> MinusSign::[]
+  | "0" -> ZeroSign::[]
 
 let rec insert_var var value memory node =
   match memory with
-  | (n,vars::vars_all)::ms when n = node -> (n,(vars@[(var,value)])::vars_all)::ms
+  | (n,[])::ms when n = node             -> (n,[(var,value)]::[])::ms
+  | (n,vars::vars_all)::ms when n = node -> (n,((var,value)::vars)::vars_all)::ms
   | m::ms                                -> m::(insert_var var value ms node)
   | []                                   -> []
 
@@ -130,8 +131,9 @@ let rec init_abstract_vars i memory node =
     let var = Console.ReadLine()
     printf "Enter variable value (+,-,0): "
     let value = interpret_abstract_value (Console.ReadLine())
-    init_abstract_vars (i-1) (insert_var var [value] memory node) node
+    init_abstract_vars (i-1) (insert_var var value memory node) node
     // [(q0;  [ [(x,[Plus]);(y,[Minus]);(A,[Minus;Plus])] ; [(x,[Zero]);(y,[Minus]);(A,[Minus;Plus])] ]  )]
+    // [Plus,Minus]
   else
     memory
 
@@ -141,7 +143,7 @@ let rec build_abstract_array list =
   match value with
     | ""                          -> []
     | x when List.contains x list -> build_abstract_array list
-    | _                           -> (interpret_abstract_value value)::build_abstract_array list
+    | _                           -> (interpret_abstract_value value)@(build_abstract_array list)
 
 let rec init_abstract_arrs i memory node = 
   if i > 0 then
@@ -160,10 +162,11 @@ let parse_bool s =
 
 let rec nodes_list pg_structure memory = 
   match pg_structure with
-  | (n0,n1,x)::structure when not List.contains n0 memory -> nodes_list structure (memory::(n0,[]))
+  | (n0,n1,x)::structure -> nodes_list structure ((n0,[])::(n1,[])::memory)
+  | []                   -> memory 
 
 let init_memory pg_structure =
-  nodes_list pg_structure []
+  remove_duplicates (nodes_list pg_structure [])
 
 // We
 let parse input =
@@ -228,15 +231,15 @@ let rec compute =
 
   let i = Convert.ToInt32(Console.ReadLine())
 
-  memory = init_abstract_vars i memory startNode
+  memory <- init_abstract_vars i memory startNode
 
   printf "Enter number of arrays (integer): "
   
   let j = Convert.ToInt32(Console.ReadLine())
 
-  memory = init_abstract_arrs j memory startNode
+  memory <- init_abstract_arrs j memory startNode
 
-  printfn "\n%s" (abstract_initializer structure memory startNode endNode)
+  printfn "\n%A" (abstract_initializer structure memory startNode endNode)
 
 // Start interacting with the user
 compute
