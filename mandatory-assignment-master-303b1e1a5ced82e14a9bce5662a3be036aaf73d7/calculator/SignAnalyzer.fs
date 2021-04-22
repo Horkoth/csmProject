@@ -440,21 +440,52 @@ let redefine_abstract_values_arr arr power_set assigned_value =
     redefine_abstract_values_arr_helper1 arr power_set assigned_value 0
 *)
 
-let rec redefine_abstract_values_arr_helper1 values assigned_value =
+let rec redefine_abstract_values_arr_helper2 values assigned_value counter =
+    //printfn "redefine_abstract_values_arr_helper2\n"
     match values with
-    | x::xs -> (assigned_value::xs)::(x::(redefine_abstract_values_arr_helper1 xs assigned_value))
-    | []    -> []
+    | x::xs when counter = 0 -> (assigned_value::xs)
+    | x::xs                  -> x::(redefine_abstract_values_arr_helper2 xs assigned_value (counter-1))
+    | []                     -> []
+
+let rec redefine_abstract_values_arr_helper1 values assigned_value counter =
+    //printfn "redefine_abstract_values_arr_helper1\n"
+    if counter > 0 then
+        (remove_duplicates (redefine_abstract_values_arr_helper2 values assigned_value counter))::(redefine_abstract_values_arr_helper1 values assigned_value (counter-1))
+    else 
+        []
+
+let rec length_of_list list =
+    match list with
+    | x::xs -> 1 + length_of_list xs
+    | []    -> 0
 
 let rec redefine_abstract_values_arr arr power_set assigned_value =
+    //printfn "redefine_abstract_values_arr_\n"
     match power_set with
-    | (a,values)::vars when a = arr -> redefine_abstract_values_arr_helper1 values assigned_value
+    | (a,values)::vars when a = arr -> redefine_abstract_values_arr_helper1 values assigned_value (length_of_list values)
     | (a,values)::vars              -> redefine_abstract_values_arr arr vars assigned_value
+    | []                            -> []
+
+let rec replace_abstract_values_arr power_set arr assigned_values =
+    //printfn "replace_abstract_values_arr\n"
+    match power_set with
+    | (x,values)::abstract_values when x = arr -> (x,assigned_values)::abstract_values
+    | (x,values)::abstract_values              -> (x,values)::(replace_abstract_values_arr abstract_values arr assigned_values)
+    | []                                       -> []
+    | _                                        -> failwith "Value update error"
+
+let rec arr_power_sets power_set arr combination_list =
+    //printfn "arr_power_sets\n"
+    match combination_list with
+    | x::xs -> (replace_abstract_values_arr power_set arr x)::(arr_power_sets power_set arr xs)
+    | []    -> []
 
 //
 //Value adder specifically computing all combinations for possible array values
 //
 
 let rec add_abstract_values_arr power_set arr assigned_value =
+    //printfn "add_abstract_values_arr\n"
     match power_set with
     | (a,values)::vars when a = arr -> (a,assigned_value::values)::vars
     | (a,values)::vars              -> (a,values)::(add_abstract_values_arr vars arr assigned_value)
@@ -468,6 +499,7 @@ let rec power_set_values_contain power_set arr assigned_value =
     | _                                                                    -> failwith "Error power_set_values_contain error"
 
 let rec abstract_values_arr power_set arr assigned_value =
+    //printfn "abstract_values_arr\n"
     (*
     if not (power_set_values_contain power_set arr assigned_value) then
         (add_abstract_values_arr power_set arr assigned_value)::(redefine_abstract_values_arr arr power_set assigned_value)
@@ -475,9 +507,9 @@ let rec abstract_values_arr power_set arr assigned_value =
         redefine_abstract_values_arr arr power_set assigned_value
     *)
     if not (power_set_values_contain power_set arr assigned_value) then
-        (add_abstract_values_arr power_set arr assigned_value)::[power_set]
+        (add_abstract_values_arr power_set arr assigned_value)::(arr_power_sets power_set arr (redefine_abstract_values_arr arr power_set assigned_value))
     else
-        [power_set]
+        (arr_power_sets power_set arr (redefine_abstract_values_arr arr power_set assigned_value))
     
 //
 //Variable assigner: evaluates an expression and assigns it to a specified variable in power_sets
@@ -500,6 +532,7 @@ let rec var_assignment_in_power_sets power_sets var assigned_expr =
 //
 
 let rec arr_assignment_in_power_sets_helper power_set arr assigned_values =
+    //printfn "\n%A" assigned_values
     match assigned_values with
     | x::xs -> (abstract_values_arr power_set arr x)@(arr_assignment_in_power_sets_helper power_set arr xs)
     | []    -> []
@@ -557,7 +590,8 @@ let pop_queue queue =
 let valid_combinations memory edge =
     match edge with
     | (node0,node1,VarAssign(x,y))   -> remove_duplicates (var_assignment_in_power_sets (power_sets_of_node memory node0) x y)
-    | (node0,node1,ArrAssign(x,y,z)) -> remove_duplicates (arr_assignment_in_power_sets (power_sets_of_node memory node0) x z)
+    | (node0,node1,ArrAssign(x,y,z)) ->     //printfn "\n%A" edge
+                                            remove_duplicates (arr_assignment_in_power_sets (power_sets_of_node memory node0) x z)
     | (node0,node1,Test(x))          -> valid_power_sets (power_sets_of_node memory node0) x
     | (node0,node1,Skip)             -> (power_sets_of_node memory node0)
     | _                              -> failwith "Combination validation error"

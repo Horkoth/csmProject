@@ -239,7 +239,7 @@ let rec compute =
 
   memory <- init_abstract_arrs j memory startNode
 
-  printfn "\n%s" (abstract_initializer structure memory startNode endNode)
+  printfn "\n%A" (abstract_initializer structure memory startNode endNode)
 
 // Start interacting with the user
 compute
