@@ -415,6 +415,44 @@ let rec add_abstract_values power_set var assigned_value =
     | _                                                                    -> failwith "Value addition error"
 
 //
+//Value adder specifically computing all combinations for possible array values
+//
+
+let rec power_set_values_contain power_set arr assigned_value =
+    match power_set with
+    | (a,values)::vars when a = arr && List.contains assigned_value values -> true
+    | (a,values)::vars when a = arr                                        -> false
+    | (a,values)::vars                                                     -> power_set_values_contain vars arr assigned_value
+    | _                                                                    -> failwith "Error power_set_values_contain error"
+
+let rec redefine_abstract_values_arr_next values assigned_value =
+    match values with
+    | x::xs -> 
+    | []    -> []
+
+let rec redefine_abstract_values_arr_current values assigned_value =
+    match values with
+    | x::xs -> (assigned_value::xs)::(x::(redefine_abstract_values_arr_current xs assigned_value))
+    | []    -> []
+
+let rec redefine_abstract_values_arr power_set arr assigned_value =
+    match power_set with
+    | (a,values)::vars when a = arr -> 
+    | (a,values)::vars
+
+let rec add_abstract_values_arr power_set arr assigned_value =
+    match power_set with
+    | (a,values)::vars when a = arr -> (a,values::assigned_value)::vars
+    | (a,values)::vars              -> (a,values)::(add_abstract_values_arr vars arr assigned_value)
+    | []                            -> []
+
+let rec abstract_values_arr power_set arr assigned_value =
+    if not (power_set_values_contain power_set arr assigned_value) then
+        (add_abstract_values_arr power_set arr assigned_value)::(redefine_abstract_values_arr power_set arr assigned_value)
+    else
+        redefine_abstract_values_arr power_set arr assigned_value
+    
+//
 //Variable assigner: evaluates an expression and assigns it to a specified variable in power_sets
 //
 
@@ -422,7 +460,7 @@ let rec var_assignment_in_power_sets_helper power_set var assigned_values =
     match assigned_values with
     | x::xs -> (replace_abstract_values power_set var x)::(var_assignment_in_power_sets_helper power_set var xs)
     | []    -> []
-    | _     -> failwith "Error  var_assignment_in_power_sets_helper error"
+    | _     -> failwith "Error var_assignment_in_power_sets_helper error"
 
 let rec var_assignment_in_power_sets power_sets var assigned_expr =
     match power_sets with
@@ -436,15 +474,15 @@ let rec var_assignment_in_power_sets power_sets var assigned_expr =
 
 let rec arr_assignment_in_power_sets_helper power_set arr assigned_values =
     match assigned_values with
-    | x::xs -> (add_abstract_values power_set arr x)::(var_assignment_in_power_sets_helper power_set arr xs)
+    | x::xs -> (add_abstract_values_arr power_set arr x)@(arr_assignment_in_power_sets_helper power_set arr xs)
     | []    -> []
     | _     -> failwith "Error  arr_assignment_in_power_sets_helper error"
 
 let rec arr_assignment_in_power_sets power_sets arr assigned_expr =
     match power_sets with
-    | x::xs -> (var_assignment_in_power_sets_helper x arr (evaluate_expr assigned_expr x))@(var_assignment_in_power_sets xs arr assigned_expr)
+    | x::xs -> (arr_assignment_in_power_sets_helper x arr (evaluate_expr assigned_expr x))@(var_assignment_in_power_sets xs arr assigned_expr)
     | []    -> []
-    | _     -> failwith "Error  arr_assignment_in_power_sets error"
+    | _     -> failwith "Error arr_assignment_in_power_sets error"
 
 //
 //Outgoing edges returns a list of edges for a node in pg_structure
@@ -532,7 +570,7 @@ let rec print_spaces num =
 let rec format_spaces char_list num =
     match char_list with
     | x::xs -> format_spaces xs (num+1)
-    | []    -> print_spaces num
+    | []    -> print_spaces (8-num)
 
 let rec value_formatter_helper power_set =
     match power_set with
