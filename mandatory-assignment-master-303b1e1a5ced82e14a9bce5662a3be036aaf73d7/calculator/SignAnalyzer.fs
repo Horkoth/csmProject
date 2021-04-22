@@ -498,6 +498,56 @@ let valid_combinations memory edge =
     | _                              -> failwith "Combination validation error"
 
 //
+//Formatter: formats the power_sets uotput as per the project description
+//
+
+let prettify_sign abstract_type =
+    match abstract_type with
+    | PlusSign  -> "+"
+    | ZeroSign  -> "0"
+    | MinusSign -> "-"
+
+let rec prettify abstract_list =
+    match abstract_list with
+    | x::[] -> (prettify_sign x)
+    | x::xs -> (prettify_sign x) + "," + (prettify xs)
+    | []    -> ""
+
+let rec variable_formatter_helper power_set =
+    match power_set with
+    | (name,values)::vars -> " " + name + "      " + (variable_formatter_helper vars)
+    | []                  -> "\n"
+
+let variable_formatter power_sets =
+    match power_sets with
+    | power_set::power_setss -> variable_formatter_helper power_set
+    | _                      -> ""
+
+let rec print_spaces num =
+    if num > 0 then 
+        " " + print_spaces (num-1)
+    else
+        ""
+
+let rec format_spaces char_list num =
+    match char_list with
+    | x::xs -> format_spaces xs (num+1)
+    | []    -> print_spaces num
+
+let rec value_formatter_helper power_set =
+    match power_set with
+    | (name,values)::vars -> "{" + (prettify values) + "}" + (format_spaces (Seq.toList ("{" + (prettify values) + "}")) 0)  + (value_formatter_helper vars)
+    | []                  -> "\n"
+
+let rec value_formatter power_sets =
+    match power_sets with
+    | power_set::power_setss -> (value_formatter_helper power_set) + (value_formatter power_setss)
+    | _                      -> ""
+
+let formatter power_sets =
+    (variable_formatter power_sets) + (value_formatter power_sets)
+
+//
 //Main function
 //
 
@@ -510,12 +560,12 @@ let rec abstract_runner pg_structure memory node_final queue =
         let difference_list = build_difference_list valid_power_sets_list (power_sets_of_node memory (node1))
         let new_memory = update_memory difference_list memory node1
         if not (List.isEmpty difference_list) then
-            let mutable queues = queues
-            queues <- queues@(outgoing_edges pg_structure node1)
-        abstract_runner pg_structure new_memory node_final queues
+            abstract_runner pg_structure new_memory node_final (queues@(outgoing_edges pg_structure node1))
+        else
+            abstract_runner pg_structure new_memory node_final queues
     else 
-        //power_sets_of_node memory node_final
-        memory
+        formatter (power_sets_of_node memory node_final)
+        //memory
 
 //
 //Initializer: initializes the main function with an initial queue
@@ -523,3 +573,4 @@ let rec abstract_runner pg_structure memory node_final queue =
 
 let abstract_initializer pg_structure memory node_start node_final =
     abstract_runner pg_structure memory node_final (outgoing_edges pg_structure node_start)
+

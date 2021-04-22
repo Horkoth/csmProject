@@ -120,8 +120,8 @@ let interpret_abstract_value i =
 
 let rec insert_var var value memory node =
   match memory with
-  | (n,[])::ms when n = node             -> (n,[(var,value)]::[])::ms
-  | (n,vars::vars_all)::ms when n = node -> (n,((var,value)::vars)::vars_all)::ms
+  | (n,[])::ms when n = node             -> ms@[(n,[(var,value)]::[])]
+  | (n,vars::vars_all)::ms when n = node -> (n,(vars@[(var,value)])::vars_all)::ms
   | m::ms                                -> m::(insert_var var value ms node)
   | []                                   -> []
 
@@ -239,7 +239,7 @@ let rec compute =
 
   memory <- init_abstract_arrs j memory startNode
 
-  printfn "\n%A" (abstract_initializer structure memory startNode endNode)
+  printfn "\n%s" (abstract_initializer structure memory startNode endNode)
 
 // Start interacting with the user
 compute
