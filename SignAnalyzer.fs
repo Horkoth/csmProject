@@ -62,6 +62,47 @@ let rec remove_duplicates list =
     remove_duplicates_helper list []
 
 //
+//Soecific duplicate remover: removes duplicates where array order is different
+//
+
+let different_lengths (values0: sign list) (values1: sign list) =
+    if values0.Length = values1.Length then
+        false
+    else
+        true
+
+let rec contains_copy_of_value values value =
+    match values with
+    | x::xs when x = value -> true
+    | x::xs                -> contains_copy_of_value xs value
+    | []                   -> false
+
+let rec is_identical_values values0 values1 =
+    match values0 with
+    | x::xs when contains_copy_of_value values1 x -> is_identical_values xs values1
+    | x::xs                                       -> false
+    | []                                          -> true
+
+let rec is_identical_power_sets power_set0 power_set1 =
+    match power_set0 , power_set1 with
+    | (var0,values0)::vars0 , (var1,values1)::vars1 when not (different_lengths values0 values1) && is_identical_values values0 values1 -> is_identical_power_sets vars0 vars1
+    | (var0,values0)::vars0 , (var1,values1)::vars1                                                                               -> false
+    | [] , []                                                                                                                     -> true
+
+let rec contains_copy_of_power_set power_sets power_set =
+    match power_sets with
+    | ps::pss when is_identical_power_sets ps power_set -> true
+    | ps::pss                                           -> contains_copy_of_power_set pss power_set
+    | []                                                -> false
+
+let rec remove_non_distinguishable power_sets =
+    match power_sets with
+    | power_set::power_setss when contains_copy_of_power_set power_setss power_set -> remove_non_distinguishable power_setss
+    | power_set::power_setss                                                       -> power_set::(remove_non_distinguishable power_setss)
+    | []                                                                           -> []
+
+
+//
 //Arithmetic evaluation functions as per the books description
 //
 
@@ -143,80 +184,80 @@ let evaluate_uminus x =
 
 let evaluate_equal x y =
     match x,y with 
-    | MinusSign,MinusSign -> true
-    | MinusSign,ZeroSign  -> false
-    | MinusSign,PlusSign  -> false
-    | ZeroSign,MinusSign  -> false
-    | ZeroSign,ZeroSign   -> true
-    | ZeroSign,PlusSign   -> false
-    | PlusSign,MinusSign  -> false
-    | PlusSign,ZeroSign   -> false
-    | PlusSign,PlusSign   -> true
+    | MinusSign,MinusSign -> true::false::[]
+    | MinusSign,ZeroSign  -> false::[]
+    | MinusSign,PlusSign  -> false::[]
+    | ZeroSign,MinusSign  -> false::[]
+    | ZeroSign,ZeroSign   -> true::[]
+    | ZeroSign,PlusSign   -> false::[]
+    | PlusSign,MinusSign  -> false::[]
+    | PlusSign,ZeroSign   -> false::[]
+    | PlusSign,PlusSign   -> true::false::[]
     | _                   -> failwith "Evaluation of type evaluate_equal error"
 
 let evaluate_nequal x y =
     match x,y with 
-    | MinusSign,MinusSign -> true
-    | MinusSign,ZeroSign  -> true
-    | MinusSign,PlusSign  -> true
-    | ZeroSign,MinusSign  -> true
-    | ZeroSign,ZeroSign   -> false
-    | ZeroSign,PlusSign   -> true
-    | PlusSign,MinusSign  -> true
-    | PlusSign,ZeroSign   -> true
-    | PlusSign,PlusSign   -> true
+    | MinusSign,MinusSign -> true::false::[]
+    | MinusSign,ZeroSign  -> true::[]
+    | MinusSign,PlusSign  -> true::[]
+    | ZeroSign,MinusSign  -> true::[]
+    | ZeroSign,ZeroSign   -> false::[]
+    | ZeroSign,PlusSign   -> true::[]
+    | PlusSign,MinusSign  -> true::[]
+    | PlusSign,ZeroSign   -> true::[]
+    | PlusSign,PlusSign   -> true::false::[]
     | _                   -> failwith "Evaluation of type evaluate_nequal error"
 
 let evaluate_greater_equal x y =
     match x,y with 
-    | MinusSign,MinusSign -> true
-    | MinusSign,ZeroSign  -> false
-    | MinusSign,PlusSign  -> false
-    | ZeroSign,MinusSign  -> true
-    | ZeroSign,ZeroSign   -> true
-    | ZeroSign,PlusSign   -> false
-    | PlusSign,MinusSign  -> true
-    | PlusSign,ZeroSign   -> true
-    | PlusSign,PlusSign   -> true
+    | MinusSign,MinusSign -> true::false::[]
+    | MinusSign,ZeroSign  -> false::[]
+    | MinusSign,PlusSign  -> false::[]
+    | ZeroSign,MinusSign  -> true::[]
+    | ZeroSign,ZeroSign   -> true::[]
+    | ZeroSign,PlusSign   -> false::[]
+    | PlusSign,MinusSign  -> true::[]
+    | PlusSign,ZeroSign   -> true::[]
+    | PlusSign,PlusSign   -> true::false::[]
     | _                   -> failwith "Evaluation of type evaluate_greater_equal error"
 
 let evaluate_smaller_equal x y =
     match x,y with 
-    | MinusSign,MinusSign -> true
-    | MinusSign,ZeroSign  -> true
-    | MinusSign,PlusSign  -> true
-    | ZeroSign,MinusSign  -> false
-    | ZeroSign,ZeroSign   -> true
-    | ZeroSign,PlusSign   -> true
-    | PlusSign,MinusSign  -> false
-    | PlusSign,ZeroSign   -> false
-    | PlusSign,PlusSign   -> true
+    | MinusSign,MinusSign -> true::false::[]
+    | MinusSign,ZeroSign  -> true::[]
+    | MinusSign,PlusSign  -> true::[]
+    | ZeroSign,MinusSign  -> false::[]
+    | ZeroSign,ZeroSign   -> true::[]
+    | ZeroSign,PlusSign   -> true::[]
+    | PlusSign,MinusSign  -> false::[]
+    | PlusSign,ZeroSign   -> false::[]
+    | PlusSign,PlusSign   -> true::false::[]
     | _                   -> failwith "Evaluation of type evaluate_smaller_equal error"
 
 let evaluate_greater x y =
     match x,y with 
-    | MinusSign,MinusSign -> true
-    | MinusSign,ZeroSign  -> false
-    | MinusSign,PlusSign  -> false
-    | ZeroSign,MinusSign  -> true
-    | ZeroSign,ZeroSign   -> false
-    | ZeroSign,PlusSign   -> false
-    | PlusSign,MinusSign  -> true
-    | PlusSign,ZeroSign   -> true
-    | PlusSign,PlusSign   -> true
+    | MinusSign,MinusSign -> true::false::[]
+    | MinusSign,ZeroSign  -> false::[]
+    | MinusSign,PlusSign  -> false::[]
+    | ZeroSign,MinusSign  -> true::[]
+    | ZeroSign,ZeroSign   -> false::[]
+    | ZeroSign,PlusSign   -> false::[]
+    | PlusSign,MinusSign  -> true::[]
+    | PlusSign,ZeroSign   -> true::[]
+    | PlusSign,PlusSign   -> true::false::[]
     | _                   -> failwith "Evaluation of type evaluate_greater error"
 
 let evaluate_smaller x y =
     match x,y with 
-    | MinusSign,MinusSign -> true
-    | MinusSign,ZeroSign  -> true
-    | MinusSign,PlusSign  -> true
-    | ZeroSign,MinusSign  -> false
-    | ZeroSign,ZeroSign   -> false
-    | ZeroSign,PlusSign   -> true
-    | PlusSign,MinusSign  -> false
-    | PlusSign,ZeroSign   -> false
-    | PlusSign,PlusSign   -> true
+    | MinusSign,MinusSign -> true::false::[]
+    | MinusSign,ZeroSign  -> true::[]
+    | MinusSign,PlusSign  -> true::[]
+    | ZeroSign,MinusSign  -> false::[]
+    | ZeroSign,ZeroSign   -> false::[]
+    | ZeroSign,PlusSign   -> true::[]
+    | PlusSign,MinusSign  -> false::[]
+    | PlusSign,ZeroSign   -> false::[]
+    | PlusSign,PlusSign   -> true::false::[]
     | _                   -> failwith "Evaluation of type evaluate_smaller error"
 
 //
@@ -343,21 +384,32 @@ let rec evaluate_expr expr power_set =
 //Boolean evaluator that can reduce boolean tests to combinations of their boolean and/or arithmetic components and find whether it is possible for a combination to evaluate to true
 //
 
+let rec negative_list bool_list =
+    match bool list with
+    | bool::bools -> (not bool)::(negative_list bools)
+    | []          -> []
+
+let rec check_bool_list bool_list =
+    match bool_list with
+    | bool::bools when bool -> true
+    | bool::bools           -> check_bool_list bools
+    | []                    -> false
+
 let rec evaluate_bool bool power_set =
     match bool with
     | True              -> true
     | False             -> false
-    | Band(x,y)         -> (evaluate_bool x power_set) && (evaluate_bool y power_set)
-    | Bor(x,y)          -> (evaluate_bool x power_set) || (evaluate_bool y power_set)
-    | And(x,y)          -> (evaluate_bool x power_set) && (evaluate_bool y power_set)
-    | Or(x,y)           -> (evaluate_bool x power_set) || (evaluate_bool y power_set)
-    | Equal(x,y)        -> all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set)
-    | Nequal(x,y)       -> all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set)
-    | Not(x)            -> not (evaluate_bool x power_set)
-    | GreaterEqual(x,y) -> all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set)
-    | SmallerEqual(x,y) -> all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set)
-    | Greater(x,y)      -> all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set)
-    | Smaller(x,y)      -> all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set)
+    | Band(x,y)         -> check_bool_list (evaluate_bool x power_set) && check_bool_list (evaluate_bool y power_set)
+    | Bor(x,y)          -> check_bool_list (evaluate_bool x power_set) || check_bool_list (evaluate_bool y power_set)
+    | And(x,y)          -> check_bool_list (evaluate_bool x power_set) && check_bool_list (evaluate_bool y power_set)
+    | Or(x,y)           -> check_bool_list (evaluate_bool x power_set) || check_bool_list (evaluate_bool y power_set)
+    | Equal(x,y)        -> check_bool_list (all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set))
+    | Nequal(x,y)       -> check_bool_list (all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set))
+    | Not(x)            -> check_bool_list (negative_list (evaluate_bool x power_set))
+    | GreaterEqual(x,y) -> check_bool_list (all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set))
+    | SmallerEqual(x,y) -> check_bool_list (all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set))
+    | Greater(x,y)      -> check_bool_list (all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set))
+    | Smaller(x,y)      -> check_bool_list (all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set))
     | _                 -> failwith "Boolean evaluation error"
 
 //
@@ -410,7 +462,7 @@ let rec add_abstract_values power_set var assigned_value =
     match power_set with
     | (x,values)::vars when x = var && List.contains assigned_value values -> (x,values)::vars
     | (x,values)::vars when x = var                                        -> (x,assigned_value::values)::vars
-    | (x,values)::vars                                                     -> (x,values)::(replace_abstract_values vars var assigned_value)
+    | (x,values)::vars                                                     -> (x,values)::(add_abstract_values vars var assigned_value)
     | []                                                                   -> []
     | _                                                                    -> failwith "Value addition error"
 
@@ -418,7 +470,6 @@ let rec add_abstract_values power_set var assigned_value =
 //Array value combination calculator: returns list of all possible combinations of values after assigning new value to array
 //
 
-(*
 let rec reformat comb counter assigned_value =
     match comb , counter with 
     | x::xs , 0 -> assigned_value::xs
@@ -427,8 +478,8 @@ let rec reformat comb counter assigned_value =
 
 let rec redefine_abstract_values_arr_helper2 arr power_set assigned_value counter  =
     match power_set with
-    | (a,vs)::vars when a = arr -> (a,reformat vs counter assigned_value)::vars
-    | (a,vs)::vars              -> (a,vs)::redefine_abstract_values_arr_helper2 arr power_set assigned_value counter
+    | (a,vs)::vars when a = arr -> (a,remove_duplicates (reformat vs counter assigned_value))::vars
+    | (a,vs)::vars              -> (a,vs)::redefine_abstract_values_arr_helper2 arr vars assigned_value counter
     | []                        -> []
 
 let rec redefine_abstract_values_arr_helper1 arr power_set assigned_value counter =
@@ -437,9 +488,9 @@ let rec redefine_abstract_values_arr_helper1 arr power_set assigned_value counte
     | _            -> []
 
 let redefine_abstract_values_arr arr power_set assigned_value =
-    redefine_abstract_values_arr_helper1 arr power_set assigned_value 0
-*)
+    remove_duplicates (redefine_abstract_values_arr_helper1 arr power_set assigned_value 0)
 
+(*
 let rec redefine_abstract_values_arr_helper2 values assigned_value counter =
     //printfn "redefine_abstract_values_arr_helper2\n"
     match values with
@@ -453,11 +504,6 @@ let rec redefine_abstract_values_arr_helper1 values assigned_value counter =
         (remove_duplicates (redefine_abstract_values_arr_helper2 values assigned_value counter))::(redefine_abstract_values_arr_helper1 values assigned_value (counter-1))
     else 
         []
-
-let rec length_of_list list =
-    match list with
-    | x::xs -> 1 + length_of_list xs
-    | []    -> 0
 
 let rec redefine_abstract_values_arr arr power_set assigned_value =
     //printfn "redefine_abstract_values_arr_\n"
@@ -480,16 +526,19 @@ let rec arr_power_sets power_set arr combination_list =
     | x::xs -> (replace_abstract_values_arr power_set arr x)::(arr_power_sets power_set arr xs)
     | []    -> []
 
+*)
+
 //
 //Value adder specifically computing all combinations for possible array values
 //
-
+(*
 let rec add_abstract_values_arr power_set arr assigned_value =
     //printfn "add_abstract_values_arr\n"
     match power_set with
     | (a,values)::vars when a = arr -> (a,assigned_value::values)::vars
     | (a,values)::vars              -> (a,values)::(add_abstract_values_arr vars arr assigned_value)
     | []                            -> []
+*)
 
 let rec power_set_values_contain power_set arr assigned_value =
     match power_set with
@@ -499,17 +548,10 @@ let rec power_set_values_contain power_set arr assigned_value =
     | _                                                                    -> failwith "Error power_set_values_contain error"
 
 let rec abstract_values_arr power_set arr assigned_value =
-    //printfn "abstract_values_arr\n"
-    (*
     if not (power_set_values_contain power_set arr assigned_value) then
-        (add_abstract_values_arr power_set arr assigned_value)::(redefine_abstract_values_arr arr power_set assigned_value)
+        (add_abstract_values power_set arr assigned_value)::(redefine_abstract_values_arr arr power_set assigned_value)
     else
         redefine_abstract_values_arr arr power_set assigned_value
-    *)
-    if not (power_set_values_contain power_set arr assigned_value) then
-        (add_abstract_values_arr power_set arr assigned_value)::(arr_power_sets power_set arr (redefine_abstract_values_arr arr power_set assigned_value))
-    else
-        (arr_power_sets power_set arr (redefine_abstract_values_arr arr power_set assigned_value))
     
 //
 //Variable assigner: evaluates an expression and assigns it to a specified variable in power_sets
@@ -517,7 +559,7 @@ let rec abstract_values_arr power_set arr assigned_value =
 
 let rec var_assignment_in_power_sets_helper power_set var assigned_values =
     match assigned_values with
-    | x::xs -> (add_abstract_values power_set var x)::(var_assignment_in_power_sets_helper power_set var xs)
+    | x::xs -> (replace_abstract_values power_set var x)::(var_assignment_in_power_sets_helper power_set var xs)
     | []    -> []
     | _     -> failwith "Error var_assignment_in_power_sets_helper error"
 
@@ -532,15 +574,16 @@ let rec var_assignment_in_power_sets power_sets var assigned_expr =
 //
 
 let rec arr_assignment_in_power_sets_helper power_set arr assigned_values =
-    //printfn "\n%A" assigned_values
     match assigned_values with
     | x::xs -> (abstract_values_arr power_set arr x)@(arr_assignment_in_power_sets_helper power_set arr xs)
     | []    -> []
-    | _     -> failwith "Error  arr_assignment_in_power_sets_helper error"
+    | _     -> failwith "Error arr_assignment_in_power_sets_helper error"
 
 let rec arr_assignment_in_power_sets power_sets arr assigned_expr =
     match power_sets with
-    | x::xs -> (arr_assignment_in_power_sets_helper x arr (evaluate_expr assigned_expr x))@(arr_assignment_in_power_sets xs arr assigned_expr)
+    | x::xs ->  //printfn "power_set \n%A" x
+                //printfn "\n%A" (arr_assignment_in_power_sets_helper x arr (evaluate_expr assigned_expr x))
+                (arr_assignment_in_power_sets_helper x arr (evaluate_expr assigned_expr x))@(arr_assignment_in_power_sets xs arr assigned_expr)
     | []    -> []
     | _     -> failwith "Error arr_assignment_in_power_sets error"
 
@@ -568,10 +611,10 @@ let rec build_difference_list_helper valid_set next_power_sets =
 
 let rec build_difference_list valid_power_sets next_power_sets =
     match valid_power_sets with
-    | x::xs when build_difference_list_helper x next_power_sets -> build_difference_list xs next_power_sets
-    | x::xs                                                     -> x::(build_difference_list xs next_power_sets)
-    | []                                                        -> []
-    | _                                                         -> failwith "Error build_difference_list error"
+    | x::xs when contains_copy_of_power_set next_power_sets x -> build_difference_list xs next_power_sets
+    | x::xs                                                   -> x::(build_difference_list xs next_power_sets)
+    | []                                                      -> []
+    | _                                                       -> failwith "Error build_difference_list error"
 
 //
 //Queue popper: pops the queue ;)
@@ -589,10 +632,11 @@ let pop_queue queue =
 
 let valid_combinations memory edge =
     match edge with
-    | (node0,node1,VarAssign(x,y))   -> remove_duplicates (var_assignment_in_power_sets (power_sets_of_node memory node0) x y)
-    | (node0,node1,ArrAssign(x,y,z)) ->     //printfn "\n%A" edge
-                                            remove_duplicates (arr_assignment_in_power_sets (power_sets_of_node memory node0) x z)
-    | (node0,node1,Test(x))          -> valid_power_sets (power_sets_of_node memory node0) x
+    | (node0,node1,VarAssign(x,y))   -> remove_non_distinguishable (remove_duplicates (var_assignment_in_power_sets (power_sets_of_node memory node0) x y))
+    | (node0,node1,ArrAssign(x,y,z)) -> remove_non_distinguishable (remove_duplicates (arr_assignment_in_power_sets (power_sets_of_node memory node0) x z))
+    | (node0,node1,Test(x))          -> printfn "\n%A" (valid_power_sets (power_sets_of_node memory node0) x)
+                                        printfn "\n%A" (remove_non_distinguishable (valid_power_sets (power_sets_of_node memory node0) x))
+                                        remove_non_distinguishable (valid_power_sets (power_sets_of_node memory node0) x)
     | (node0,node1,Skip)             -> (power_sets_of_node memory node0)
     | _                              -> failwith "Combination validation error"
 
@@ -651,6 +695,7 @@ let formatter power_sets =
 //
 
 let rec abstract_runner pg_structure memory node_final queue =
+    printfn "\n%A" queue
     let popped_queue = pop_queue queue
     if popped_queue.IsSome then
         let edge, queues = popped_queue.Value
