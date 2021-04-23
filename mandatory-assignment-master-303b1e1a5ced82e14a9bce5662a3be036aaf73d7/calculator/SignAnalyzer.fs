@@ -65,6 +65,12 @@ let rec remove_duplicates list =
 //Soecific duplicate remover: removes duplicates where array order is different
 //
 
+let different_lengths (values0: sign list) (values1: sign list) =
+    if values0.Length = values1.Length then
+        false
+    else
+        true
+
 let rec contains_copy_of_value values value =
     match values with
     | x::xs when x = value -> true
@@ -79,13 +85,13 @@ let rec is_identical_values values0 values1 =
 
 let rec is_identical_power_sets power_set0 power_set1 =
     match power_set0 , power_set1 with
-    | (var0,values0)::vars0 , (var1,values1)::vars1 when is_identical_values values0 values1 -> is_identical_power_sets vars0 vars1
-    | (var0,values0)::vars0 , (var1,values1)::vars1                                          -> false
-    | [] , []                                                                                -> true
+    | (var0,values0)::vars0 , (var1,values1)::vars1 when not (different_lengths values0 values1) && is_identical_values values0 values1 -> is_identical_power_sets vars0 vars1
+    | (var0,values0)::vars0 , (var1,values1)::vars1                                                                               -> false
+    | [] , []                                                                                                                     -> true
 
 let rec contains_copy_of_power_set power_sets power_set =
     match power_sets with
-    | ps::pss when is_identical_power_sets power_set ps -> true
+    | ps::pss when is_identical_power_sets ps power_set -> true
     | ps::pss                                           -> contains_copy_of_power_set pss power_set
     | []                                                -> false
 
@@ -94,8 +100,6 @@ let rec remove_non_distinguishable power_sets =
     | power_set::power_setss when contains_copy_of_power_set power_setss power_set -> remove_non_distinguishable power_setss
     | power_set::power_setss                                                       -> power_set::(remove_non_distinguishable power_setss)
     | []                                                                           -> []
-
-//power_sets -> power_set
 
 
 //
@@ -490,11 +494,6 @@ let rec redefine_abstract_values_arr_helper1 values assigned_value counter =
     else 
         []
 
-let rec length_of_list list =
-    match list with
-    | x::xs -> 1 + length_of_list xs
-    | []    -> 0
-
 let rec redefine_abstract_values_arr arr power_set assigned_value =
     //printfn "redefine_abstract_values_arr_\n"
     match power_set with
@@ -601,10 +600,10 @@ let rec build_difference_list_helper valid_set next_power_sets =
 
 let rec build_difference_list valid_power_sets next_power_sets =
     match valid_power_sets with
-    | x::xs when build_difference_list_helper x next_power_sets -> build_difference_list xs next_power_sets
-    | x::xs                                                     -> x::(build_difference_list xs next_power_sets)
-    | []                                                        -> []
-    | _                                                         -> failwith "Error build_difference_list error"
+    | x::xs when contains_copy_of_power_set next_power_sets x -> build_difference_list xs next_power_sets
+    | x::xs                                                   -> x::(build_difference_list xs next_power_sets)
+    | []                                                      -> []
+    | _                                                       -> failwith "Error build_difference_list error"
 
 //
 //Queue popper: pops the queue ;)
@@ -622,11 +621,11 @@ let pop_queue queue =
 
 let valid_combinations memory edge =
     match edge with
-    | (node0,node1,VarAssign(x,y))   -> remove_duplicates (var_assignment_in_power_sets (power_sets_of_node memory node0) x y)
-    | (node0,node1,ArrAssign(x,y,z)) -> printfn "non-removed \n%A" (remove_duplicates (arr_assignment_in_power_sets (power_sets_of_node memory node0) x z))
-                                        printfn "removed \n%A" (remove_non_distinguishable (remove_duplicates (arr_assignment_in_power_sets (power_sets_of_node memory node0) x z)))
-                                        remove_non_distinguishable (remove_duplicates (arr_assignment_in_power_sets (power_sets_of_node memory node0) x z))
-    | (node0,node1,Test(x))          -> valid_power_sets (power_sets_of_node memory node0) x
+    | (node0,node1,VarAssign(x,y))   -> remove_non_distinguishable (remove_duplicates (var_assignment_in_power_sets (power_sets_of_node memory node0) x y))
+    | (node0,node1,ArrAssign(x,y,z)) -> remove_non_distinguishable (remove_duplicates (arr_assignment_in_power_sets (power_sets_of_node memory node0) x z))
+    | (node0,node1,Test(x))          -> printfn "\n%A" (valid_power_sets (power_sets_of_node memory node0) x)
+                                        printfn "\n%A" (remove_non_distinguishable (valid_power_sets (power_sets_of_node memory node0) x))
+                                        remove_non_distinguishable (valid_power_sets (power_sets_of_node memory node0) x)
     | (node0,node1,Skip)             -> (power_sets_of_node memory node0)
     | _                              -> failwith "Combination validation error"
 
@@ -685,6 +684,7 @@ let formatter power_sets =
 //
 
 let rec abstract_runner pg_structure memory node_final queue =
+    printfn "\n%A" queue
     let popped_queue = pop_queue queue
     if popped_queue.IsSome then
         let edge, queues = popped_queue.Value
