@@ -184,80 +184,80 @@ let evaluate_uminus x =
 
 let evaluate_equal x y =
     match x,y with 
-    | MinusSign,MinusSign -> true
-    | MinusSign,ZeroSign  -> false
-    | MinusSign,PlusSign  -> false
-    | ZeroSign,MinusSign  -> false
-    | ZeroSign,ZeroSign   -> true
-    | ZeroSign,PlusSign   -> false
-    | PlusSign,MinusSign  -> false
-    | PlusSign,ZeroSign   -> false
-    | PlusSign,PlusSign   -> true
+    | MinusSign,MinusSign -> true::false::[]
+    | MinusSign,ZeroSign  -> false::[]
+    | MinusSign,PlusSign  -> false::[]
+    | ZeroSign,MinusSign  -> false::[]
+    | ZeroSign,ZeroSign   -> true::[]
+    | ZeroSign,PlusSign   -> false::[]
+    | PlusSign,MinusSign  -> false::[]
+    | PlusSign,ZeroSign   -> false::[]
+    | PlusSign,PlusSign   -> true::false::[]
     | _                   -> failwith "Evaluation of type evaluate_equal error"
 
 let evaluate_nequal x y =
     match x,y with 
-    | MinusSign,MinusSign -> true
-    | MinusSign,ZeroSign  -> true
-    | MinusSign,PlusSign  -> true
-    | ZeroSign,MinusSign  -> true
-    | ZeroSign,ZeroSign   -> false
-    | ZeroSign,PlusSign   -> true
-    | PlusSign,MinusSign  -> true
-    | PlusSign,ZeroSign   -> true
-    | PlusSign,PlusSign   -> true
+    | MinusSign,MinusSign -> true::false::[]
+    | MinusSign,ZeroSign  -> true::[]
+    | MinusSign,PlusSign  -> true::[]
+    | ZeroSign,MinusSign  -> true::[]
+    | ZeroSign,ZeroSign   -> false::[]
+    | ZeroSign,PlusSign   -> true::[]
+    | PlusSign,MinusSign  -> true::[]
+    | PlusSign,ZeroSign   -> true::[]
+    | PlusSign,PlusSign   -> true::false::[]
     | _                   -> failwith "Evaluation of type evaluate_nequal error"
 
 let evaluate_greater_equal x y =
     match x,y with 
-    | MinusSign,MinusSign -> true
-    | MinusSign,ZeroSign  -> false
-    | MinusSign,PlusSign  -> false
-    | ZeroSign,MinusSign  -> true
-    | ZeroSign,ZeroSign   -> true
-    | ZeroSign,PlusSign   -> false
-    | PlusSign,MinusSign  -> true
-    | PlusSign,ZeroSign   -> true
-    | PlusSign,PlusSign   -> true
+    | MinusSign,MinusSign -> true::false::[]
+    | MinusSign,ZeroSign  -> false::[]
+    | MinusSign,PlusSign  -> false::[]
+    | ZeroSign,MinusSign  -> true::[]
+    | ZeroSign,ZeroSign   -> true::[]
+    | ZeroSign,PlusSign   -> false::[]
+    | PlusSign,MinusSign  -> true::[]
+    | PlusSign,ZeroSign   -> true::[]
+    | PlusSign,PlusSign   -> true::false::[]
     | _                   -> failwith "Evaluation of type evaluate_greater_equal error"
 
 let evaluate_smaller_equal x y =
     match x,y with 
-    | MinusSign,MinusSign -> true
-    | MinusSign,ZeroSign  -> true
-    | MinusSign,PlusSign  -> true
-    | ZeroSign,MinusSign  -> false
-    | ZeroSign,ZeroSign   -> true
-    | ZeroSign,PlusSign   -> true
-    | PlusSign,MinusSign  -> false
-    | PlusSign,ZeroSign   -> false
-    | PlusSign,PlusSign   -> true
+    | MinusSign,MinusSign -> true::false::[]
+    | MinusSign,ZeroSign  -> true::[]
+    | MinusSign,PlusSign  -> true::[]
+    | ZeroSign,MinusSign  -> false::[]
+    | ZeroSign,ZeroSign   -> true::[]
+    | ZeroSign,PlusSign   -> true::[]
+    | PlusSign,MinusSign  -> false::[]
+    | PlusSign,ZeroSign   -> false::[]
+    | PlusSign,PlusSign   -> true::false::[]
     | _                   -> failwith "Evaluation of type evaluate_smaller_equal error"
 
 let evaluate_greater x y =
     match x,y with 
-    | MinusSign,MinusSign -> true
-    | MinusSign,ZeroSign  -> false
-    | MinusSign,PlusSign  -> false
-    | ZeroSign,MinusSign  -> true
-    | ZeroSign,ZeroSign   -> false
-    | ZeroSign,PlusSign   -> false
-    | PlusSign,MinusSign  -> true
-    | PlusSign,ZeroSign   -> true
-    | PlusSign,PlusSign   -> true
+    | MinusSign,MinusSign -> true::false::[]
+    | MinusSign,ZeroSign  -> false::[]
+    | MinusSign,PlusSign  -> false::[]
+    | ZeroSign,MinusSign  -> true::[]
+    | ZeroSign,ZeroSign   -> false::[]
+    | ZeroSign,PlusSign   -> false::[]
+    | PlusSign,MinusSign  -> true::[]
+    | PlusSign,ZeroSign   -> true::[]
+    | PlusSign,PlusSign   -> true::false::[]
     | _                   -> failwith "Evaluation of type evaluate_greater error"
 
 let evaluate_smaller x y =
     match x,y with 
-    | MinusSign,MinusSign -> true
-    | MinusSign,ZeroSign  -> true
-    | MinusSign,PlusSign  -> true
-    | ZeroSign,MinusSign  -> false
-    | ZeroSign,ZeroSign   -> false
-    | ZeroSign,PlusSign   -> true
-    | PlusSign,MinusSign  -> false
-    | PlusSign,ZeroSign   -> false
-    | PlusSign,PlusSign   -> true
+    | MinusSign,MinusSign -> true::false::[]
+    | MinusSign,ZeroSign  -> true::[]
+    | MinusSign,PlusSign  -> true::[]
+    | ZeroSign,MinusSign  -> false::[]
+    | ZeroSign,ZeroSign   -> false::[]
+    | ZeroSign,PlusSign   -> true::[]
+    | PlusSign,MinusSign  -> false::[]
+    | PlusSign,ZeroSign   -> false::[]
+    | PlusSign,PlusSign   -> true::false::[]
     | _                   -> failwith "Evaluation of type evaluate_smaller error"
 
 //
@@ -277,14 +277,20 @@ let rec evaluate_abstract_expr arithmetic arg0 arg1 =
 //Boolean evaluation: given an boolean test type, evaluates two non-list abstract arguments for the specified boolean test
 //
 
+let rec check_bool_list bool_list =
+    match bool_list with
+    | bool::bools when bool -> true
+    | bool::bools           -> check_bool_list bools
+    | []                    -> false
+
 let evaluate_abstract_bool test arg0 arg1 =
     match test with
-    | Equal(x,y)        -> evaluate_equal arg0 arg1
-    | Nequal(x,y)       -> evaluate_nequal arg0 arg1
-    | GreaterEqual(x,y) -> evaluate_greater_equal arg0 arg1
-    | SmallerEqual(x,y) -> evaluate_smaller_equal arg0 arg1
-    | Greater(x,y)      -> evaluate_greater arg0 arg1
-    | Smaller(x,y)      -> evaluate_smaller arg0 arg1
+    | Equal(x,y)        -> check_bool_list (evaluate_equal arg0 arg1)
+    | Nequal(x,y)       -> check_bool_list (evaluate_nequal arg0 arg1)
+    | GreaterEqual(x,y) -> check_bool_list (evaluate_greater_equal arg0 arg1)
+    | SmallerEqual(x,y) -> check_bool_list (evaluate_smaller_equal arg0 arg1)
+    | Greater(x,y)      -> check_bool_list (evaluate_greater arg0 arg1)
+    | Smaller(x,y)      -> check_bool_list (evaluate_smaller arg0 arg1)
     | _                 -> failwith "Derived boolean evaluation error"
 
 //
@@ -352,16 +358,16 @@ let rec evaluate_uminus_list value_list =
 let rec all_bool_combinations_helper bool value value_list =
     match value_list with
     | x::xs when evaluate_abstract_bool bool value x -> true
-    | x::xs                                         -> all_bool_combinations_helper bool value xs
-    | []                                            -> false
-    | _                                             -> failwith "Error all_abstract_combinations_helper error"
+    | x::xs                                          -> all_bool_combinations_helper bool value xs
+    | []                                             -> false
+    | _                                              -> failwith "Error all_abstract_combinations_helper error"
 
 let rec all_bool_combinations bool value_list0 value_list1  =
     match value_list0 with
     | x::xs when all_bool_combinations_helper bool x value_list1 -> true
-    | x::xs                                                          -> all_bool_combinations bool xs value_list1
-    | []                                                             -> false
-    | _                                                              -> failwith "Error all_abstract_combinations error"
+    | x::xs                                                      -> all_bool_combinations bool xs value_list1
+    | []                                                         -> false
+    | _                                                          -> failwith "Error all_abstract_combinations error"
 
 //
 //Expression evaluator that can reduce any decimal value and/or variable expression to sets of single abstract values and send these to be computed by smaller functions
@@ -384,6 +390,11 @@ let rec evaluate_expr expr power_set =
 //Boolean evaluator that can reduce boolean tests to combinations of their boolean and/or arithmetic components and find whether it is possible for a combination to evaluate to true
 //
 
+let rec negative_list bool_list =
+    match bool_list with
+    | bool::bools -> (not bool)::(negative_list bools)
+    | []          -> []
+
 let rec evaluate_bool bool power_set =
     match bool with
     | True              -> true
@@ -392,13 +403,13 @@ let rec evaluate_bool bool power_set =
     | Bor(x,y)          -> (evaluate_bool x power_set) || (evaluate_bool y power_set)
     | And(x,y)          -> (evaluate_bool x power_set) && (evaluate_bool y power_set)
     | Or(x,y)           -> (evaluate_bool x power_set) || (evaluate_bool y power_set)
-    | Equal(x,y)        -> all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set)
-    | Nequal(x,y)       -> all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set)
-    | Not(x)            -> not (evaluate_bool x power_set)
-    | GreaterEqual(x,y) -> all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set)
-    | SmallerEqual(x,y) -> all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set)
-    | Greater(x,y)      -> all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set)
-    | Smaller(x,y)      -> all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set)
+    | Equal(x,y)        -> (all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set))
+    | Nequal(x,y)       -> (all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set))
+    | Not(x)            -> check_bool_list (negative_list (evaluate_bool x power_set))
+    | GreaterEqual(x,y) -> (all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set))
+    | SmallerEqual(x,y) -> (all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set))
+    | Greater(x,y)      -> (all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set))
+    | Smaller(x,y)      -> (all_bool_combinations bool (evaluate_expr x power_set) (evaluate_expr y power_set))
     | _                 -> failwith "Boolean evaluation error"
 
 //
