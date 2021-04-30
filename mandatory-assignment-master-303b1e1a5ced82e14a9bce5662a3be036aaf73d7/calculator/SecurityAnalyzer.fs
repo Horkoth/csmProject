@@ -47,13 +47,59 @@ let rec remove_visited_from_outgoing outgoing_list visited_list =
     | []                                                                         -> []
 
 //
+//arithmetic and boolean evaluation as copied from the other files
+//
+
+let rec evaluate_expr expr =
+    match expr with
+    | Num(x)            -> []
+    | Var(x)            -> x::[]
+    | Times(x,y)        -> (evaluate_expr x)@(evaluate_expr y)
+    | Div(x,y)          -> (evaluate_expr x)@(evaluate_expr y)
+    | Plus(x,y)         -> (evaluate_expr x)@(evaluate_expr y)
+    | Minus(x,y)        -> (evaluate_expr x)@(evaluate_expr y)
+    | Pow(x,y)          -> (evaluate_expr x)@(evaluate_expr y)
+    | Uminus(x)         -> (evaluate_expr x)
+    | ArrIndex(x,y)     -> [x]@(evaluate_expr y)
+
+let rec evaluate_bool bool =
+    match bool with
+    | True              -> []
+    | False             -> []
+    | Band(x,y)         -> (evaluate_bool x)@(evaluate_bool y)
+    | Bor(x,y)          -> (evaluate_bool x)@(evaluate_bool y)
+    | And(x,y)          -> (evaluate_bool x)@(evaluate_bool y)
+    | Or(x,y)           -> (evaluate_bool x)@(evaluate_bool y)
+    | Equal(x,y)        -> (evaluate_expr x)@(evaluate_expr y)
+    | Nequal(x,y)       -> (evaluate_expr x)@(evaluate_expr y)
+    | Not(x)            -> (evaluate_bool x)
+    | GreaterEqual(x,y) -> (evaluate_expr x)@(evaluate_expr y)
+    | SmallerEqual(x,y) -> (evaluate_expr x)@(evaluate_expr y)
+    | Greater(x,y)      -> (evaluate_expr x)@(evaluate_expr y)
+    | Smaller(x,y)      -> (evaluate_expr x)@(evaluate_expr y)
+
+//
 //Logic part that determines how each variable affects each other according to the edge action, and updates the actual flow accordingly
 //
 
+let rec insert_flows var var_list =
+    match var_list with
+    | x::xs -> (x,var)::(insert_flows var xs)
+    | []    -> []
+
+let update_flow_var var value actual_flow =
+    remove_duplicates ((insert_flows var (evaluate_expr value))@actual_flow)
+
+let update_flow_arr var index value actual_flow =
+    remove_duplicates ((insert_flows var (evaluate_expr value))@(insert_flows var (evaluate_expr index))@actual_flow)
+
+let update_conditionals test conditionals =
+    remove_duplicates ((evaluate_bool test)@conditionals)
+
 let update_memory memory action =
     match action,memory with
-    | VarAssign(x,y),(actual_flow,conditionals)   -> ((update_var x y actual_flow),conditionals)
-    | ArrAssign(x,y,z),(actual_flow,conditionals) -> ((update_arr x y z actual_flow),conditionals)
+    | VarAssign(x,y),(actual_flow,conditionals)   -> ((update_flow_var x y actual_flow),conditionals)
+    | ArrAssign(x,y,z),(actual_flow,conditionals) -> ((update_flow_arr x y z actual_flow),conditionals)
     | Test(x),(actual_flow,conditionals)          -> (actual_flow,(update_conditionals x conditionals))
     | Skip,_                                      -> memory
 
@@ -64,17 +110,18 @@ let update_memory memory action =
 let rec searcher pg_structure visited memory current_node final_node =
     let outgoing_list = remove_visited_from_outgoing (outgoing_edges pg_structure current_node) visited
     if current_node = final_node then
-        actual_flow
+        memory
     else if outgoing_list.Length > 1 then
         remove_duplicates (branch_search pg_structure visited memory current_node final_node outgoing_list)
     else if outgoing_list.Length = 1 then
         remove_duplicates (branch_search pg_structure (current_node::visited) memory current_node final_node outgoing_list)
     else
-        actual_flow
-and rec branch_search pg_structure visited memory current_node final_node outgoing_list =
+        memory
+and branch_search pg_structure visited memory current_node final_node outgoing_list =
     match outgoing_list with
     | (node0,node1,action)::xs -> (searcher pg_structure visited (update_memory memory action) node1 final_node)@(branch_search pg_structure visited memory current_node final_node xs)
     | []                       -> []
+
 //memory is a tuple structure of actual_flow and conditionals: memory = (actual_flow,conditionals)
 let searcher_initializer pg_structure start_node final_node =
     searcher pg_structure [] ([],[]) start_node final_node
