@@ -14,6 +14,8 @@ open Lexer
 //open Interpreter
 #load "SignAnalyzer.fs"
 open SignAnalyzer
+#load "SecurityAnalyzer.fs"
+open SecurityAnalyzer
 
 let startNode = 0
 let endNode = -1
@@ -215,16 +217,17 @@ let rec compute =
   
   let e = parse (Console.ReadLine())
 
-  printf "Enter deterministic value (true, false): "
+  //printf "Enter deterministic value (true, false): "
 
-  let det = parse_bool (Console.ReadLine())
+  //let det = parse_bool (Console.ReadLine())
 
   //printf "Enter number of steps (integer): "
 
   //let steps = Convert.ToInt32(Console.ReadLine())
 
-  let structure = (pg_structure e startNode endNode det)
+  let structure = (pg_structure e startNode endNode true)
 
+  (*
   let mutable memory = init_memory structure
 
   printf "Enter number of variables (integer): "
@@ -240,6 +243,53 @@ let rec compute =
   memory <- init_abstract_arrs j memory startNode
 
   printfn "\n%s" (abstract_initializer structure memory startNode endNode)
+  *)
+
+  printf "Enter security lattice: "
+
+  let lattice = convert_char_list_to_lattice_list (Seq.toList (Console.ReadLine())) []
+
+  printf "Enter security classification: "
+
+  printf "Enter number of variables (integer): "
+
+  let i = Convert.ToInt32(Console.ReadLine())
+
+  let rec init_security_class i = 
+    if i > 0 then
+      printf "Enter variable name (string): "
+      let var = Console.ReadLine()
+      printf "Enter variable security classification (string): "
+      let security_class = Console.ReadLine()
+      (var,security_class)::(init_security_class (i-1))
+    else
+      []
+
+  let classification = init_security_class i
+
+  let actual = searcher_initializer structure startNode endNode
+
+  let allowed = allowed_flow lattice classification
+
+  let violations = flow_violations actual allowed
+
+  let rec flow_formatter flow_list =
+    match flow_list with
+    | (x,y)::[] -> x + " -> " + y
+    | (x,y)::xs -> x + " -> " + y + ", " + (flow_formatter xs)
+
+  let security_interpreter violations =
+    match List.isEmpty violations with
+    | true  -> "secure"
+    | false -> "not secure"
+
+  printfn "\nActual flow: %s" (flow_formatter actual)
+
+  printfn "\nAllowed flow: %s" (flow_formatter allowed)
+
+  printfn "\nViolations: %s" (flow_formatter violations)
+
+  printfn "\nResult: %s" (security_interpreter violations)
 
 // Start interacting with the user
 compute
