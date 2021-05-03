@@ -277,6 +277,8 @@ let rec compute =
     match flow_list with
     | (x,y)::[] -> x + " -> " + y
     | (x,y)::xs -> x + " -> " + y + ", " + (flow_formatter xs)
+    | []        -> ""
+    | _         -> failwith (string flow_list)
 
   let security_interpreter violations =
     match List.isEmpty violations with

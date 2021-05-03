@@ -35,6 +35,7 @@ let rec element_contained_in_list element element_list =
     | x::xs when x = element -> true
     | x::xs                  -> element_contained_in_list element xs
     | []                     -> false
+    | _                      -> failwith "List containment error"
 
 //
 //actual flow extractor: removes actual flow from memory structure
@@ -54,6 +55,7 @@ let rec remove_visited_from_outgoing outgoing_list visited_list =
     | (node0,node1,action)::xs when element_contained_in_list node1 visited_list -> remove_visited_from_outgoing xs visited_list
     | x::xs                                                                      -> x::(remove_visited_from_outgoing xs visited_list)
     | []                                                                         -> []
+    | _                                                                          -> failwith "Visited list correction error"
 
 //
 //arithmetic and boolean evaluation as copied from the other files
@@ -70,6 +72,7 @@ let rec evaluate_expr expr =
     | Pow(x,y)          -> (evaluate_expr x)@(evaluate_expr y)
     | Uminus(x)         -> (evaluate_expr x)
     | ArrIndex(x,y)     -> [x]@(evaluate_expr y)
+    | _                 -> failwith "Expression evaluation error"
 
 let rec evaluate_bool bool =
     match bool with
@@ -86,6 +89,7 @@ let rec evaluate_bool bool =
     | SmallerEqual(x,y) -> (evaluate_expr x)@(evaluate_expr y)
     | Greater(x,y)      -> (evaluate_expr x)@(evaluate_expr y)
     | Smaller(x,y)      -> (evaluate_expr x)@(evaluate_expr y)
+    | _                 -> failwith "Boolean evaluation error"
 
 //
 //Logic part that determines how each variable affects each other according to the edge action, and updates the actual flow accordingly
@@ -95,6 +99,7 @@ let rec insert_flows var var_list =
     match var_list with
     | x::xs -> (x,var)::(insert_flows var xs)
     | []    -> []
+    | _     -> failwith "Flow insertion error"
 
 let update_flow_var var value actual_flow conditionals =
     remove_duplicates ((insert_flows var (evaluate_expr value))@(insert_flows var conditionals)@actual_flow)
@@ -111,6 +116,7 @@ let update_memory memory action =
     | ArrAssign(x,y,z),(actual_flow,conditionals) -> ((update_flow_arr x y z actual_flow conditionals),conditionals)
     | Test(x),(actual_flow,conditionals)          -> (actual_flow,(update_conditionals x conditionals))
     | Skip,(actual_flow,conditionals)             -> memory
+    | _                                           -> failwith "Memory update error"
 
 //
 //Searcher and brancher that finds all possible paths to final node, but only passing throuch each loop once
@@ -130,6 +136,7 @@ and branch_search pg_structure visited memory current_node final_node outgoing_l
     match outgoing_list with
     | (node0,node1,action)::xs -> (searcher pg_structure visited (update_memory memory action) node1 final_node)@(branch_search pg_structure visited memory current_node final_node xs)
     | []                       -> []
+    | _                        -> failwith "Search error"
 
 //memory is a tuple structure of actual_flow and conditionals: memory = (actual_flow,conditionals)
 let searcher_initializer pg_structure start_node final_node =
@@ -144,6 +151,7 @@ let rec valid_flow security_lattice class0 class1 =
     | (write_from,write_to)::xs when class0 = write_from && class1 = write_to -> true
     | (write_from,write_to)::xs                                               -> valid_flow xs class0 class1
     | []                                                                      -> false
+    | _                                                                       -> failwith "Flow validation error"
 
 let rec allowed_flow_combinations security_lattice security_class var_class_tuple =
     match security_class,var_class_tuple with
@@ -151,11 +159,13 @@ let rec allowed_flow_combinations security_lattice security_class var_class_tupl
     | (var0,class0)::xs,(var1,class1) when valid_flow security_lattice class0 class1 -> (var0,var1)::(allowed_flow_combinations security_lattice xs var_class_tuple)
     | (var0,class0)::xs,(var1,class1)                                                -> allowed_flow_combinations security_lattice xs var_class_tuple
     | [],_                                                                           -> []
+    | _                                                                              -> failwith "Flow combination error"
 
 let rec allowed_flow_helper security_lattice security_class0 security_class1 =
     match security_class1 with
     | var_class_tuple::xs -> (allowed_flow_combinations security_lattice security_class0 var_class_tuple)@(allowed_flow_helper security_lattice security_class0 xs)
     | []                  -> []
+    | _                   -> failwith "Allowed flow error"
 
 let allowed_flow security_lattice security_class =
     allowed_flow_helper security_lattice security_class security_class
@@ -168,6 +178,7 @@ let rec convert_char_list_to_lattice_list_helper pair_char_list (first_element: 
     match pair_char_list with
     | x::xs when x = '<' -> ((System.String.Concat(Array.ofList(first_element))),System.String.Concat(Array.ofList(xs)))
     | x::xs              -> convert_char_list_to_lattice_list_helper xs (first_element@[x])
+    | _                  -> failwith "Lattice list helper error"
 
 let rec convert_char_list_to_lattice_list input_char_list pair_element =
     match input_char_list with
@@ -175,6 +186,7 @@ let rec convert_char_list_to_lattice_list input_char_list pair_element =
     | x::xs when x = ' ' -> convert_char_list_to_lattice_list xs pair_element
     | x::xs              -> convert_char_list_to_lattice_list xs (pair_element@[x])
     | []                 -> (convert_char_list_to_lattice_list_helper pair_element [])::[]
+    | _                  -> failwith "Lattice list error"
 
 //
 //Violations logic, returns the difference between two lists
